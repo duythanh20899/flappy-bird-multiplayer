@@ -625,7 +625,7 @@
         '<div class="or-divider">or</div>' +
         '<div class="input-group">' +
           '<span class="input-label">Room Code</span>' +
-          '<input type="text" class="text-input room-code-input" id="codeInput" placeholder="XXXX" maxlength="4">' +
+          '<input type="text" class="text-input room-code-input" id="codeInput" placeholder="000" maxlength="3" inputmode="numeric" pattern="[0-9]*">' +
         '</div>' +
         '<button class="btn-secondary" id="joinBtn" style="width:100%">JOIN ROOM</button>' +
       '</div>';
@@ -672,7 +672,7 @@
       e.stopPropagation();
       const name = document.getElementById('nameInput').value.trim() || 'Player';
       const code = document.getElementById('codeInput').value.trim().toUpperCase();
-      if (code.length !== 4) { showError('Room code must be 4 characters!'); return; }
+      if (code.length !== 3 || !/^\d{3}$/.test(code)) { showError('Room code must be 3 digits!'); return; }
       localStorage.setItem('flappy_name', name);
       ensureAudio();
       gameState = 'lobby';

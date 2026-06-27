@@ -40,11 +40,17 @@ const PLAYER_COLORS = [
 ];
 
 function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chars = '0123456789';
   let code;
+  let attempts = 0;
   do {
     code = '';
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    for (let i = 0; i < 3; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    attempts++;
+    if (attempts > 5000) {
+      code = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      break;
+    }
   } while (rooms.has(code));
   return code;
 }
