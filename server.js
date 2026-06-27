@@ -37,6 +37,10 @@ const PLAYER_COLORS = [
   { body: '#f472b6', stroke: '#be185d', name: 'Pink',  wing: '#fce7f3' },
   { body: '#60a5fa', stroke: '#1d4ed8', name: 'Blue',  wing: '#dbeafe' },
   { body: '#a78bfa', stroke: '#6d28d9', name: 'Purple',   wing: '#ede9fe' },
+  { body: '#4ade80', stroke: '#166534', name: 'Green',  wing: '#f0fdf4' },
+  { body: '#f87171', stroke: '#991b1b', name: 'Red',    wing: '#fef2f2' },
+  { body: '#fb923c', stroke: '#9a3412', name: 'Orange', wing: '#fff7ed' },
+  { body: '#2dd4bf', stroke: '#115e59', name: 'Cyan',   wing: '#f0fdfa' },
 ];
 
 function generateCode() {
@@ -154,7 +158,7 @@ wss.on('connection', function (ws, req) {
 
       case 'create': {
         const code = generateCode();
-        const preferredColor = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < 4) ? msg.colorIndex : 0;
+        const preferredColor = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < PLAYER_COLORS.length) ? msg.colorIndex : 0;
         const player = {
           id: ws._playerId,
           ws: ws,
@@ -200,9 +204,9 @@ wss.on('connection', function (ws, req) {
         }
 
         const usedColors = new Set(room.players.map(function (p) { return p.colorIndex; }));
-        let colorIdx = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < 4) ? msg.colorIndex : 0;
+        let colorIdx = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < PLAYER_COLORS.length) ? msg.colorIndex : 0;
         if (usedColors.has(colorIdx)) {
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < PLAYER_COLORS.length; i++) {
             if (!usedColors.has(i)) { colorIdx = i; break; }
           }
         }
