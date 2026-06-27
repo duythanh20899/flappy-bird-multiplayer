@@ -424,6 +424,7 @@
   let stepCount = 0;
   let distSinceSpawn = 0;
   let particles = [];
+  let ghosts = [];
   let shakeTimer = 0;
   let shakeIntensity = 0;
   let flashAlpha = 0;
@@ -561,6 +562,12 @@
             remotePlayers[numId] = { y: H/2, vy: 0, rot: 0, score: 0, alive: true, wingPhase: 0, flapTimer: 0 };
           }
           const rp = remotePlayers[numId];
+          // Spawn ghost soul if the remote player just died
+          if (rp && rp.alive && st.alive === false) {
+            const info = allPlayersInfo.find(p => p.id === numId);
+            const colorIdx = info ? info.colorIndex : 0;
+            spawnGhost(BIRD_X, rp.y, rp.rot, rp.wingPhase, PLAYER_COLORS[colorIdx]);
+          }
           rp.targetY = st.y * H; // normalized
           rp.vy = st.vy;
           rp.rot = st.rot;
@@ -887,6 +894,7 @@
 
     pipes = [];
     particles = [];
+    ghosts = [];
     stepCount = 0;
     distSinceSpawn = 0;
     flashAlpha = 0;
@@ -958,12 +966,34 @@
     }
   }
 
+  function spawnGhost(x, y, rot, wingPhase, color) {
+    ghosts.push({
+      x: x,
+      y: y,
+      rot: rot,
+      wingPhase: wingPhase,
+      color: color,
+      alpha: 0.8,
+      yOffset: 0
+    });
+  }
+
   function updateParticles() {
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
       p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
     }
     particles = particles.filter(p => p.alpha > 0);
+  }
+
+  function updateGhosts() {
+    for (let i = 0; i < ghosts.length; i++) {
+      const g = ghosts[i];
+      g.yOffset -= 1.2 * scale; // float up
+      g.alpha -= 0.015; // fade away
+      g.rot += 0.015; // slow spin
+    }
+    ghosts = ghosts.filter(g => g.alpha > 0);
   }
 
   function spawnPipe() {
@@ -1057,6 +1087,7 @@
     shakeIntensity = 6 * scale;
     flashAlpha = 0.5;
     spawnParticles(myPlayer.x, myPlayer.y, myPlayer.color.body, 15, (Math.random()-0.5)*4, -2, 3);
+    spawnGhost(myPlayer.x, myPlayer.y, myPlayer.rot, myPlayer.wingPhase, myPlayer.color);
     updateScoreboard();
 
     if (myScore > best) {
@@ -1230,6 +1261,21 @@
     }
   }
 
+  function drawGhosts() {
+    ghosts.forEach(function(g) {
+      ctx.save();
+      ctx.globalAlpha = g.alpha;
+      const ghostColor = {
+        body: 'rgba(255, 255, 255, 0.8)',
+        stroke: 'rgba(186, 230, 253, 0.8)', // glowing light blue/cyan stroke
+        wing: 'rgba(255, 255, 255, 0.9)'
+      };
+      // Draw ghost bird with X eyes
+      drawBird(g.x, g.y + g.yOffset, g.rot, g.wingPhase, 0, BIRD_R, ghostColor, false);
+      ctx.restore();
+    });
+  }
+
   function draw() {
     // Set uniform scaling and offset to prevent stretching/distortion
     ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * offsetX, dpr * offsetY);
@@ -1253,6 +1299,7 @@
     }
 
     drawParticles();
+    drawGhosts();
 
     // Ground - stretched to cover full canvas width
     const spd = gameState === 'dead' ? 0 : speedFor(myScore);
@@ -1337,6 +1384,7 @@
           stepCount++;
         }
         updateParticles();
+        updateGhosts();
         if (shakeTimer > 0) shakeTimer -= STEP;
         acc -= STEP;
         guard++;
