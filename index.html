@@ -91,6 +91,19 @@
   }
   .btn-secondary:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
 
+  .btn-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff; border: 3px solid #14532d;
+    padding: 14px 28px;
+    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
+    border-radius: 14px; cursor: pointer;
+    box-shadow: 0 5px 0 #14532d;
+    transition: transform 0.05s, box-shadow 0.05s;
+    touch-action: manipulation;
+  }
+  .btn-success:active { transform: translateY(4px); box-shadow: 0 1px 0 #14532d; }
+  .btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+
   .hidden { display: none !important; }
 
   #muteBtn {
@@ -374,6 +387,7 @@
 
   // ===== GAME STATE =====
   let gameState = 'menu'; // menu | lobby | waiting | playing | dead
+  let isSinglePlayer = false;
   let myId = null;
   let myPlayer = null;
   let remotePlayers = {}; // id -> { targetY, targetRot, ... }
@@ -437,7 +451,7 @@
       wsReady = false;
       setConnStatus('disconnected');
       stopSyncLoop();
-      if (gameState === 'playing') {
+      if (gameState === 'playing' && !isSinglePlayer) {
         // Lost connection during game
         showError('Mất kết nối!');
       }
@@ -469,6 +483,10 @@
 
   function setConnStatus(status) {
     connDot.className = 'conn-dot';
+    if (isSinglePlayer) {
+      connText.textContent = 'Chơi đơn 🎮';
+      return;
+    }
     if (status === 'connected') {
       // green is default from .conn-dot CSS
       connText.textContent = 'Đã kết nối';
@@ -483,6 +501,7 @@
 
   // ===== HANDLE SERVER MESSAGES =====
   function handleServerMsg(msg) {
+    if (isSinglePlayer) return;
     switch (msg.type) {
       case 'room':
         roomCode = msg.code;
@@ -543,6 +562,7 @@
 
   // ===== SYNC LOOP =====
   function startSyncLoop() {
+    if (isSinglePlayer) return;
     stopSyncLoop();
     syncInterval = setInterval(function() {
       if (gameState !== 'playing' || !myPlayer) return;
@@ -591,6 +611,8 @@
           '<span class="input-label">Tên của bạn</span>' +
           '<input type="text" class="text-input" id="nameInput" placeholder="Nhập tên..." maxlength="12" value="' + escHtml(savedName) + '">' +
         '</div>' +
+        '<button class="btn-success" id="singleBtn" style="width:100%">CHƠI ĐƠN</button>' +
+        '<div class="or-divider">hoặc chơi online</div>' +
         '<button class="btn" id="createBtn" style="width:100%">TẠO PHÒNG</button>' +
         '<div class="or-divider">hoặc</div>' +
         '<div class="input-group">' +
@@ -603,6 +625,30 @@
     // Prevent game input from inputs
     document.querySelectorAll('#overlay input').forEach(function(input) {
       input.addEventListener('keydown', function(e) { e.stopPropagation(); });
+    });
+
+    document.getElementById('singleBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const name = document.getElementById('nameInput').value.trim() || 'Player';
+      localStorage.setItem('flappy_name', name);
+      ensureAudio();
+
+      isSinglePlayer = true;
+      myId = 1;
+      isHost = true;
+
+      const colorIdx = Math.floor(Math.random() * PLAYER_COLORS.length);
+      allPlayersInfo = [{
+        id: 1,
+        name: name,
+        colorIndex: colorIdx,
+        color: PLAYER_COLORS[colorIdx],
+        isHost: true
+      }];
+
+      setConnStatus(wsReady ? 'connected' : 'disconnected');
+      rngSeed = Math.floor(Math.random() * 2147483647);
+      startGame();
     });
 
     document.getElementById('createBtn').addEventListener('click', function(e) {
@@ -711,6 +757,10 @@
       '<div class="card">' +
         '<h1>KẾT QUẢ</h1>' +
         '<div class="leaderboard">' + lbHtml + '</div>' +
+        (isSinglePlayer
+          ? '<p style="font-family:\'Press Start 2P\', monospace; font-size: 11px; color: #fde047; margin: 8px 0;">KỶ LỤC: ' + best + '</p>'
+          : ''
+        ) +
         (isHost
           ? '<button class="btn" id="restartBtn">CHƠI LẠI</button>'
           : '<p>Chờ chủ phòng<span class="waiting-dots"></span></p>'
@@ -721,14 +771,25 @@
     if (document.getElementById('restartBtn')) {
       document.getElementById('restartBtn').addEventListener('click', function(e) {
         e.stopPropagation();
-        sendMsg({ type: 'restart' });
+        if (isSinglePlayer) {
+          rngSeed = Math.floor(Math.random() * 2147483647);
+          startGame();
+        } else {
+          sendMsg({ type: 'restart' });
+        }
       });
     }
 
     document.getElementById('menuBtn').addEventListener('click', function(e) {
       e.stopPropagation();
-      if (ws) ws.close();
-      setTimeout(function() { connectWs(); showMenu(); }, 300);
+      if (isSinglePlayer) {
+        isSinglePlayer = false;
+        setConnStatus(wsReady ? 'connected' : 'disconnected');
+        showMenu();
+      } else {
+        if (ws) ws.close();
+        setTimeout(function() { connectWs(); showMenu(); }, 300);
+      }
     });
   }
 
@@ -925,21 +986,36 @@
     spawnParticles(myPlayer.x, myPlayer.y, myPlayer.color.body, 15, (Math.random()-0.5)*4, -2, 3);
     updateScoreboard();
 
-    // Send death state immediately
-    sendMsg({
-      type: 'state',
-      y: myPlayer.y / H,
-      vy: myPlayer.vy,
-      rot: myPlayer.rot,
-      score: myScore,
-      alive: false,
-      wingPhase: myPlayer.wingPhase,
-      flapTimer: 0,
-    });
-
     if (myScore > best) {
       best = myScore;
       localStorage.setItem('flappy_best', String(best));
+    }
+
+    if (isSinglePlayer) {
+      gameState = 'dead';
+      deathTime = performance.now();
+      setTimeout(function() {
+        const rankings = [{
+          id: 1,
+          name: allPlayersInfo[0].name,
+          colorIndex: allPlayersInfo[0].colorIndex,
+          color: allPlayersInfo[0].color,
+          score: myScore,
+        }];
+        showGameOverScreen(rankings);
+      }, 800);
+    } else {
+      // Send death state immediately
+      sendMsg({
+        type: 'state',
+        y: myPlayer.y / H,
+        vy: myPlayer.vy,
+        rot: myPlayer.rot,
+        score: myScore,
+        alive: false,
+        wingPhase: myPlayer.wingPhase,
+        flapTimer: 0,
+      });
     }
   }
 
