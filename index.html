@@ -11,12 +11,8 @@
 <meta name="flappy-ws-url" content="__FLAPPY_WS_URL__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-  @font-face {
-    font-family: 'FVF Fernando 08';
-    src: url('FVF Fernando 08.ttf') format('truetype');
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     height: 100%; width: 100%; overflow: hidden;
@@ -59,13 +55,13 @@
   }
   @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   #overlay h1 {
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 24px;
+    font-family: 'Press Start 2P', monospace; font-size: 20px;
     text-shadow: 0 4px 6px rgba(0,0,0,0.3);
     color: #ffd000; -webkit-text-stroke: 1.5px #3a2a00;
     letter-spacing: -1px;
   }
   #overlay h2 {
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px;
+    font-family: 'Press Start 2P', monospace; font-size: 13px;
     color: #ffd000; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
   #overlay p { font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); line-height: 1.6; font-weight: 500; }
@@ -74,7 +70,7 @@
     background: linear-gradient(135deg, #f7d51d, #e5be15);
     color: #432; border: 3px solid #432;
     padding: 14px 28px;
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px; font-weight: 700;
+    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 5px 0 #432;
     transition: transform 0.05s, box-shadow 0.05s;
@@ -99,7 +95,7 @@
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #fff; border: 3px solid #14532d;
     padding: 14px 28px;
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px; font-weight: 700;
+    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 5px 0 #14532d;
     transition: transform 0.05s, box-shadow 0.05s;
@@ -143,7 +139,7 @@
   .text-input::placeholder { color: rgba(255,255,255,0.3); font-weight: 400; }
 
   .room-code-input {
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 24px;
+    font-family: 'Press Start 2P', monospace; font-size: 20px;
     text-align: center; letter-spacing: 8px; text-transform: uppercase;
     padding: 14px;
   }
@@ -168,7 +164,7 @@
   }
   .room-code-display .label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 700; }
   .room-code-display .code {
-    font-family: 'FVF Fernando 08', sans-serif; font-size: 36px;
+    font-family: 'Press Start 2P', monospace; font-size: 32px;
     color: #fde047; letter-spacing: 10px; text-shadow: 0 3px 8px rgba(0,0,0,0.4);
   }
   .room-code-display .hint { font-size: 11px; opacity: 0.5; margin-top: 8px; }
@@ -190,7 +186,7 @@
   }
   .player-name { flex: 1; font-size: 15px; font-weight: 700; }
   .player-badge {
-    font-size: 14px; font-family: 'FVF Fernando 08', sans-serif;
+    font-size: 10px; font-family: 'Press Start 2P', monospace;
     color: #fde047; opacity: 0.8;
   }
 
@@ -242,7 +238,7 @@
   .sb-item.you { border-color: rgba(253,224,71,0.5); }
   .sb-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0; }
   .sb-name { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: #fff; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sb-score { font-family: 'FVF Fernando 08', sans-serif; font-size: 16px; color: #fde047; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  .sb-score { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fde047; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
   .sb-bounce { transform: scale(1.2) !important; }
 
   /* ===== LEADERBOARD (game over) ===== */
@@ -257,7 +253,7 @@
   .lb-rank { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
   .lb-color { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0; }
   .lb-name { flex: 1; font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lb-score-val { font-family: 'FVF Fernando 08', sans-serif; font-size: 20px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+  .lb-score-val { font-family: 'Press Start 2P', monospace; font-size: 16px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
 
   /* ===== ERROR TOAST ===== */
   .error-toast {
@@ -278,7 +274,7 @@
   <div id="scoreboard" class="hidden"></div>
   <div class="conn-status" id="connStatus">
     <div class="conn-dot connecting" id="connDot"></div>
-    <span id="connText">Đang kết nối...</span>
+    <span id="connText">Connecting...</span>
   </div>
   <button id="muteBtn" aria-label="Bật/tắt âm thanh">🔊</button>
   <div id="overlay"></div>
@@ -299,10 +295,10 @@
 
   // ===== PLAYER COLORS =====
   const PLAYER_COLORS = [
-    { body: '#fde047', stroke: '#ca8a04', name: 'Vàng',  wing: '#fff8dc' },
-    { body: '#f472b6', stroke: '#be185d', name: 'Hồng',  wing: '#fce7f3' },
-    { body: '#60a5fa', stroke: '#1d4ed8', name: 'Xanh',  wing: '#dbeafe' },
-    { body: '#a78bfa', stroke: '#6d28d9', name: 'Tím',   wing: '#ede9fe' },
+    { body: '#fde047', stroke: '#ca8a04', name: 'Yellow',  wing: '#fff8dc' },
+    { body: '#f472b6', stroke: '#be185d', name: 'Pink',  wing: '#fce7f3' },
+    { body: '#60a5fa', stroke: '#1d4ed8', name: 'Blue',  wing: '#dbeafe' },
+    { body: '#a78bfa', stroke: '#6d28d9', name: 'Purple',   wing: '#ede9fe' },
   ];
 
   // ===== GEOMETRY =====
@@ -459,7 +455,7 @@
       stopSyncLoop();
       if (gameState === 'playing' && !isSinglePlayer) {
         // Lost connection during game
-        showError('Mất kết nối!');
+        showError('Connection lost!');
       }
       scheduleReconnect();
     };
@@ -490,18 +486,18 @@
   function setConnStatus(status) {
     connDot.className = 'conn-dot';
     if (isSinglePlayer) {
-      connText.textContent = 'Chơi đơn 🎮';
+      connText.textContent = 'Single Player 🎮';
       return;
     }
     if (status === 'connected') {
       // green is default from .conn-dot CSS
-      connText.textContent = 'Đã kết nối';
+      connText.textContent = 'Connected';
     } else if (status === 'connecting') {
       connDot.classList.add('connecting');
-      connText.textContent = 'Đang kết nối...';
+      connText.textContent = 'Connecting...';
     } else {
       connDot.classList.add('disconnected');
-      connText.textContent = 'Mất kết nối';
+      connText.textContent = 'Disconnected';
     }
   }
 
@@ -614,18 +610,18 @@
         '<h1>FLAPPY BIRD</h1>' +
         '<p>Multiplayer Online 🌐</p>' +
         '<div class="input-group">' +
-          '<span class="input-label">Tên của bạn</span>' +
-          '<input type="text" class="text-input" id="nameInput" placeholder="Nhập tên..." maxlength="12" value="' + escHtml(savedName) + '">' +
+          '<span class="input-label">Your Name</span>' +
+          '<input type="text" class="text-input" id="nameInput" placeholder="Enter name..." maxlength="12" value="' + escHtml(savedName) + '">' +
         '</div>' +
-        '<button class="btn-success" id="singleBtn" style="width:100%">CHƠI ĐƠN</button>' +
-        '<div class="or-divider">hoặc chơi online</div>' +
-        '<button class="btn" id="createBtn" style="width:100%">TẠO PHÒNG</button>' +
-        '<div class="or-divider">hoặc</div>' +
+        '<button class="btn-success" id="singleBtn" style="width:100%">SINGLE PLAYER</button>' +
+        '<div class="or-divider">or play online</div>' +
+        '<button class="btn" id="createBtn" style="width:100%">CREATE ROOM</button>' +
+        '<div class="or-divider">or</div>' +
         '<div class="input-group">' +
-          '<span class="input-label">Mã phòng</span>' +
+          '<span class="input-label">Room Code</span>' +
           '<input type="text" class="text-input room-code-input" id="codeInput" placeholder="XXXX" maxlength="4">' +
         '</div>' +
-        '<button class="btn-secondary" id="joinBtn" style="width:100%">VÀO PHÒNG</button>' +
+        '<button class="btn-secondary" id="joinBtn" style="width:100%">JOIN ROOM</button>' +
       '</div>';
 
     // Prevent game input from inputs
@@ -670,7 +666,7 @@
       e.stopPropagation();
       const name = document.getElementById('nameInput').value.trim() || 'Player';
       const code = document.getElementById('codeInput').value.trim().toUpperCase();
-      if (code.length !== 4) { showError('Mã phòng phải có 4 ký tự!'); return; }
+      if (code.length !== 4) { showError('Room code must be 4 characters!'); return; }
       localStorage.setItem('flappy_name', name);
       ensureAudio();
       gameState = 'lobby';
@@ -698,33 +694,33 @@
           '<div class="player-dot" style="background:' + p.color.body + ';border-color:' + p.color.stroke + ';">' +
             (p.colorIndex + 1) +
           '</div>' +
-          '<span class="player-name">' + escHtml(p.name) + (isYou ? ' (Bạn)' : '') + '</span>' +
+          '<span class="player-name">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
           (p.isHost ? '<span class="player-badge">HOST</span>' : '') +
         '</div>';
     });
 
     const canStart = isHost && allPlayersInfo.length >= 2;
     const waitingMsg = allPlayersInfo.length < 2
-      ? 'Chờ thêm người chơi<span class="waiting-dots"></span>'
-      : (isHost ? 'Sẵn sàng! Nhấn bắt đầu' : 'Chờ chủ phòng bắt đầu<span class="waiting-dots"></span>');
+      ? 'Waiting for players<span class="waiting-dots"></span>'
+      : (isHost ? 'Ready! Press start' : 'Waiting for host to start<span class="waiting-dots"></span>');
 
     overlay.innerHTML =
       '<div class="card">' +
-        '<h2>PHÒNG CHỜ</h2>' +
+        '<h2>WAITING ROOM</h2>' +
         '<div class="room-code-display">' +
-          '<div class="label">Mã phòng</div>' +
+          '<div class="label">Room Code</div>' +
           '<div class="code">' + escHtml(roomCode) + '</div>' +
-          '<div class="hint">Chia sẻ mã này cho bạn bè</div>' +
+          '<div class="hint">Share this code with friends</div>' +
         '</div>' +
         '<div class="player-list">' + playersHtml + '</div>' +
         '<p>' + waitingMsg + '</p>' +
         (canStart
-          ? '<button class="btn" id="goBtn">BẮT ĐẦU</button>'
+          ? '<button class="btn" id="goBtn">START</button>'
           : (isHost
-            ? '<button class="btn" id="goBtn" disabled>CẦN ÍT NHẤT 2 NGƯỜI</button>'
+            ? '<button class="btn" id="goBtn" disabled>NEED AT LEAST 2 PLAYERS</button>'
             : '')
         ) +
-        '<button class="btn-secondary" id="backBtn" style="width:100%;margin-top:4px">← QUAY LẠI</button>' +
+        '<button class="btn-secondary" id="backBtn" style="width:100%;margin-top:4px">← BACK</button>' +
       '</div>';
 
     if (document.getElementById('goBtn') && canStart) {
@@ -754,24 +750,24 @@
         '<div class="lb-row' + (i === 0 ? ' first' : '') + (isYou ? ' you' : '') + '">' +
           '<span class="lb-rank">' + rankEmojis[i] + '</span>' +
           '<div class="lb-color" style="background:' + p.color.body + ';"></div>' +
-          '<span class="lb-name">' + escHtml(p.name) + (isYou ? ' (Bạn)' : '') + '</span>' +
+          '<span class="lb-name">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
           '<span class="lb-score-val">' + p.score + '</span>' +
         '</div>';
     });
 
     overlay.innerHTML =
       '<div class="card">' +
-        '<h1>KẾT QUẢ</h1>' +
+        '<h1>RESULTS</h1>' +
         '<div class="leaderboard">' + lbHtml + '</div>' +
         (isSinglePlayer
-          ? '<p style="font-family:\'FVF Fernando 08\', sans-serif; font-size: 16px; color: #fde047; margin: 8px 0;">KỶ LỤC: ' + best + '</p>'
+          ? '<p style="font-family:\'Press Start 2P\', monospace; font-size: 11px; color: #fde047; margin: 8px 0;">BEST: ' + best + '</p>'
           : ''
         ) +
         (isHost
-          ? '<button class="btn" id="restartBtn">CHƠI LẠI</button>'
-          : '<p>Chờ chủ phòng<span class="waiting-dots"></span></p>'
+          ? '<button class="btn" id="restartBtn">PLAY AGAIN</button>'
+          : '<p>Waiting for host<span class="waiting-dots"></span></p>'
         ) +
-        '<button class="btn-secondary" id="menuBtn" style="width:100%">← VỀ MENU</button>' +
+        '<button class="btn-secondary" id="menuBtn" style="width:100%">← MENU</button>' +
       '</div>';
 
     if (document.getElementById('restartBtn')) {
@@ -1222,7 +1218,7 @@
     // Draw my bird on top
     if (myPlayer) {
       const myInfo = allPlayersInfo.find(p => p.id === myId);
-      const myName = myInfo ? myInfo.name : 'Bạn';
+      const myName = myInfo ? myInfo.name : 'You';
 
       if (myPlayer.alive) {
         drawBird(myPlayer.x, myPlayer.y, myPlayer.rot, myPlayer.wingPhase, myPlayer.flapTimer, myPlayer.r, myPlayer.color, true);

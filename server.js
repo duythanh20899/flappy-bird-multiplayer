@@ -33,10 +33,10 @@ const rooms = new Map();
 let nextPlayerId = 1;
 
 const PLAYER_COLORS = [
-  { body: '#fde047', stroke: '#ca8a04', name: 'Vàng',  wing: '#fff8dc' },
-  { body: '#f472b6', stroke: '#be185d', name: 'Hồng',  wing: '#fce7f3' },
-  { body: '#60a5fa', stroke: '#1d4ed8', name: 'Xanh',  wing: '#dbeafe' },
-  { body: '#a78bfa', stroke: '#6d28d9', name: 'Tím',   wing: '#ede9fe' },
+  { body: '#fde047', stroke: '#ca8a04', name: 'Yellow',  wing: '#fff8dc' },
+  { body: '#f472b6', stroke: '#be185d', name: 'Pink',  wing: '#fce7f3' },
+  { body: '#60a5fa', stroke: '#1d4ed8', name: 'Blue',  wing: '#dbeafe' },
+  { body: '#a78bfa', stroke: '#6d28d9', name: 'Purple',   wing: '#ede9fe' },
 ];
 
 function generateCode() {
@@ -179,16 +179,16 @@ wss.on('connection', function (ws, req) {
       case 'join': {
         const code = (msg.code || '').toUpperCase().trim();
         if (!rooms.has(code)) {
-          send(ws, { type: 'error', msg: 'Phòng không tồn tại!' });
+          send(ws, { type: 'error', msg: 'Room does not exist!' });
           return;
         }
         const room = rooms.get(code);
         if (room.players.length >= 4) {
-          send(ws, { type: 'error', msg: 'Phòng đã đầy (tối đa 4 người)!' });
+          send(ws, { type: 'error', msg: 'Room is full (max 4 players)!' });
           return;
         }
         if (room.state !== 'lobby') {
-          send(ws, { type: 'error', msg: 'Game đang chạy, không thể vào!' });
+          send(ws, { type: 'error', msg: 'Game is running, cannot join!' });
           return;
         }
 
@@ -231,11 +231,11 @@ wss.on('connection', function (ws, req) {
         const room = rooms.get(ws._roomCode);
         if (!room) return;
         if (room.hostId !== ws._playerId) {
-          send(ws, { type: 'error', msg: 'Chỉ chủ phòng mới có thể bắt đầu!' });
+          send(ws, { type: 'error', msg: 'Only host can start the game!' });
           return;
         }
         if (room.players.length < 2) {
-          send(ws, { type: 'error', msg: 'Cần ít nhất 2 người chơi!' });
+          send(ws, { type: 'error', msg: 'Need at least 2 players!' });
           return;
         }
 
