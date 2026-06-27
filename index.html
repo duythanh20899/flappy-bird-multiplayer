@@ -11,8 +11,12 @@
 <meta name="flappy-ws-url" content="__FLAPPY_WS_URL__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'FVF Fernando 08';
+    src: url('FVF Fernando 08.ttf') format('truetype');
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     height: 100%; width: 100%; overflow: hidden;
@@ -55,13 +59,13 @@
   }
   @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   #overlay h1 {
-    font-family: 'Press Start 2P', monospace; font-size: 20px;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 24px;
     text-shadow: 0 4px 6px rgba(0,0,0,0.3);
     color: #ffd000; -webkit-text-stroke: 1.5px #3a2a00;
     letter-spacing: -1px;
   }
   #overlay h2 {
-    font-family: 'Press Start 2P', monospace; font-size: 13px;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px;
     color: #ffd000; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
   #overlay p { font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); line-height: 1.6; font-weight: 500; }
@@ -70,7 +74,7 @@
     background: linear-gradient(135deg, #f7d51d, #e5be15);
     color: #432; border: 3px solid #432;
     padding: 14px 28px;
-    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 5px 0 #432;
     transition: transform 0.05s, box-shadow 0.05s;
@@ -95,7 +99,7 @@
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #fff; border: 3px solid #14532d;
     padding: 14px 28px;
-    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 18px; font-weight: 700;
     border-radius: 14px; cursor: pointer;
     box-shadow: 0 5px 0 #14532d;
     transition: transform 0.05s, box-shadow 0.05s;
@@ -139,7 +143,7 @@
   .text-input::placeholder { color: rgba(255,255,255,0.3); font-weight: 400; }
 
   .room-code-input {
-    font-family: 'Press Start 2P', monospace; font-size: 20px;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 24px;
     text-align: center; letter-spacing: 8px; text-transform: uppercase;
     padding: 14px;
   }
@@ -164,7 +168,7 @@
   }
   .room-code-display .label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 700; }
   .room-code-display .code {
-    font-family: 'Press Start 2P', monospace; font-size: 32px;
+    font-family: 'FVF Fernando 08', sans-serif; font-size: 36px;
     color: #fde047; letter-spacing: 10px; text-shadow: 0 3px 8px rgba(0,0,0,0.4);
   }
   .room-code-display .hint { font-size: 11px; opacity: 0.5; margin-top: 8px; }
@@ -186,7 +190,7 @@
   }
   .player-name { flex: 1; font-size: 15px; font-weight: 700; }
   .player-badge {
-    font-size: 10px; font-family: 'Press Start 2P', monospace;
+    font-size: 14px; font-family: 'FVF Fernando 08', sans-serif;
     color: #fde047; opacity: 0.8;
   }
 
@@ -238,7 +242,7 @@
   .sb-item.you { border-color: rgba(253,224,71,0.5); }
   .sb-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0; }
   .sb-name { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: #fff; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sb-score { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fde047; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  .sb-score { font-family: 'FVF Fernando 08', sans-serif; font-size: 16px; color: #fde047; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
   .sb-bounce { transform: scale(1.2) !important; }
 
   /* ===== LEADERBOARD (game over) ===== */
@@ -253,7 +257,7 @@
   .lb-rank { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
   .lb-color { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0; }
   .lb-name { flex: 1; font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lb-score-val { font-family: 'Press Start 2P', monospace; font-size: 16px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+  .lb-score-val { font-family: 'FVF Fernando 08', sans-serif; font-size: 20px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
 
   /* ===== ERROR TOAST ===== */
   .error-toast {
@@ -760,7 +764,7 @@
         '<h1>KẾT QUẢ</h1>' +
         '<div class="leaderboard">' + lbHtml + '</div>' +
         (isSinglePlayer
-          ? '<p style="font-family:\'Press Start 2P\', monospace; font-size: 11px; color: #fde047; margin: 8px 0;">KỶ LỤC: ' + best + '</p>'
+          ? '<p style="font-family:\'FVF Fernando 08\', sans-serif; font-size: 16px; color: #fde047; margin: 8px 0;">KỶ LỤC: ' + best + '</p>'
           : ''
         ) +
         (isHost
