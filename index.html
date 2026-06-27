@@ -302,33 +302,34 @@
   ];
 
   // ===== GEOMETRY =====
-  let W = 360, H = 640, dpr = 1, scale = 1;
+  // ===== GEOMETRY =====
+  const W = 360, H = 640;
+  let renderW = 360, renderH = 640;
+  let dpr = 1, scale = 1;
   let BIRD_R, PIPE_W, GAP_BASE, GROUND_H, GRAV, JUMP_V, SPEED_BASE, SPACING, BIRD_X;
 
   function recomputeScale() {
-    scale = Math.min(W / 360, H / 640);
-    if (scale < 0.5) scale = 0.5;
-    if (scale > 2.0) scale = 2.0;
-    BIRD_R    = 13  * scale;
-    PIPE_W    = 60  * scale;
-    GAP_BASE  = 136 * scale;
-    GROUND_H  = 76  * scale;
-    GRAV      = 0.40 * scale;
-    JUMP_V    = 7.0  * scale;
-    SPEED_BASE= 2.0  * scale;
-    SPACING   = W * 0.65;
-    BIRD_X    = W * 0.28;
+    scale = 1;
+    BIRD_R    = 13;
+    PIPE_W    = 60;
+    GAP_BASE  = 136;
+    GROUND_H  = 76;
+    GRAV      = 0.40;
+    JUMP_V    = 7.0;
+    SPEED_BASE= 2.0;
+    SPACING   = 360 * 0.65; // 234
+    BIRD_X    = 360 * 0.28; // 100.8
   }
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
-    W = Math.max(200, Math.round(rect.width));
-    H = Math.max(300, Math.round(rect.height));
+    renderW = Math.max(200, Math.round(rect.width));
+    renderH = Math.max(300, Math.round(rect.height));
     dpr = window.devicePixelRatio || 1;
-    canvas.width  = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    canvas.style.width  = W + 'px';
-    canvas.style.height = H + 'px';
+    canvas.width  = Math.round(renderW * dpr);
+    canvas.height = Math.round(renderH * dpr);
+    canvas.style.width  = renderW + 'px';
+    canvas.style.height = renderH + 'px';
     recomputeScale();
   }
 
@@ -1151,7 +1152,7 @@
   }
 
   function draw() {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(dpr * (renderW / W), 0, 0, dpr * (renderH / H), 0, 0);
     if (shakeTimer > 0) {
       ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
     }
