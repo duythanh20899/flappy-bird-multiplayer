@@ -1322,30 +1322,23 @@
     // Draw remote birds first (behind) - faded opacity for less visual distraction
     for (const id in remotePlayers) {
       const rp = remotePlayers[id];
+      if (!rp.alive) continue;
       const info = allPlayersInfo.find(p => p.id === parseInt(id));
       if (!info) continue;
       const color = PLAYER_COLORS[info.colorIndex];
       ctx.save();
-      ctx.globalAlpha = rp.alive ? 0.35 : 0.1;
-      drawBird(BIRD_X, rp.y, rp.rot, rp.wingPhase, rp.flapTimer, BIRD_R, color, rp.alive);
+      ctx.globalAlpha = 0.35;
+      drawBird(BIRD_X, rp.y, rp.rot, rp.wingPhase, rp.flapTimer, BIRD_R, color, true);
       ctx.restore();
-      drawPlayerLabel(BIRD_X, rp.y, BIRD_R, info.name, color, rp.alive, rp.alive ? 0.45 : 0.15);
+      drawPlayerLabel(BIRD_X, rp.y, BIRD_R, info.name, color, true, 0.45);
     }
 
     // Draw my bird on top
-    if (myPlayer) {
+    if (myPlayer && myPlayer.alive) {
       const myInfo = allPlayersInfo.find(p => p.id === myId);
       const myName = myInfo ? myInfo.name : 'You';
-
-      if (myPlayer.alive) {
-        drawBird(myPlayer.x, myPlayer.y, myPlayer.rot, myPlayer.wingPhase, myPlayer.flapTimer, myPlayer.r, myPlayer.color, true);
-        drawPlayerLabel(myPlayer.x, myPlayer.y, myPlayer.r, myName, myPlayer.color, true);
-      } else {
-        ctx.save(); ctx.globalAlpha = 0.4;
-        drawBird(myPlayer.x, myPlayer.y, 1.2, myPlayer.wingPhase, 0, myPlayer.r, myPlayer.color, false);
-        ctx.restore();
-        drawPlayerLabel(myPlayer.x, myPlayer.y, myPlayer.r, myName, myPlayer.color, false);
-      }
+      drawBird(myPlayer.x, myPlayer.y, myPlayer.rot, myPlayer.wingPhase, myPlayer.flapTimer, myPlayer.r, myPlayer.color, true);
+      drawPlayerLabel(myPlayer.x, myPlayer.y, myPlayer.r, myName, myPlayer.color, true);
     }
 
     // Idle preview birds (menu/waiting)
