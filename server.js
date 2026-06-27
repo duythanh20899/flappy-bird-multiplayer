@@ -154,11 +154,12 @@ wss.on('connection', function (ws, req) {
 
       case 'create': {
         const code = generateCode();
+        const preferredColor = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < 4) ? msg.colorIndex : 0;
         const player = {
           id: ws._playerId,
           ws: ws,
           name: (msg.name || 'Player').substring(0, 12),
-          colorIndex: 0,
+          colorIndex: preferredColor,
           alive: true,
         };
         const room = {
@@ -199,9 +200,11 @@ wss.on('connection', function (ws, req) {
         }
 
         const usedColors = new Set(room.players.map(function (p) { return p.colorIndex; }));
-        let colorIdx = 0;
-        for (let i = 0; i < 4; i++) {
-          if (!usedColors.has(i)) { colorIdx = i; break; }
+        let colorIdx = (typeof msg.colorIndex === 'number' && msg.colorIndex >= 0 && msg.colorIndex < 4) ? msg.colorIndex : 0;
+        if (usedColors.has(colorIdx)) {
+          for (let i = 0; i < 4; i++) {
+            if (!usedColors.has(i)) { colorIdx = i; break; }
+          }
         }
 
         const player = {

@@ -255,6 +255,21 @@
   .lb-name { flex: 1; font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lb-score-val { font-family: 'Press Start 2P', monospace; font-size: 16px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
 
+  /* ===== COLOR PICKER ===== */
+  .color-picker {
+    display: flex; gap: 12px; margin: 4px 0 8px 0; justify-content: center; width: 100%;
+  }
+  .color-dot-opt {
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+  .color-dot-opt:hover { transform: scale(1.1); }
+  .color-dot-opt.selected {
+    box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0,0,0,0.5);
+    transform: scale(1.15);
+  }
+
   /* ===== ERROR TOAST ===== */
   .error-toast {
     position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -610,6 +625,14 @@
     scoreboardEl.classList.add('hidden');
 
     const savedName = localStorage.getItem('flappy_name') || '';
+    let selectedColorIdx = parseInt(localStorage.getItem('flappy_color_index')) || 0;
+    if (selectedColorIdx < 0 || selectedColorIdx >= PLAYER_COLORS.length) selectedColorIdx = 0;
+
+    let pickerHtml = '';
+    PLAYER_COLORS.forEach(function(c, idx) {
+      const isSel = idx === selectedColorIdx;
+      pickerHtml += '<div class="color-dot-opt' + (isSel ? ' selected' : '') + '" data-index="' + idx + '" style="background:' + c.body + '; border: 3px solid ' + c.stroke + ';"></div>';
+    });
 
     overlay.innerHTML =
       '<div class="card">' +
@@ -618,6 +641,10 @@
         '<div class="input-group">' +
           '<span class="input-label">Your Name</span>' +
           '<input type="text" class="text-input" id="nameInput" placeholder="Enter name..." maxlength="12" value="' + escHtml(savedName) + '">' +
+        '</div>' +
+        '<div class="input-group" style="align-items:center; gap: 4px;">' +
+          '<span class="input-label">Select Color</span>' +
+          '<div class="color-picker">' + pickerHtml + '</div>' +
         '</div>' +
         '<button class="btn-success" id="singleBtn" style="width:100%">SINGLE PLAYER</button>' +
         '<div class="or-divider">or play online</div>' +
@@ -635,6 +662,19 @@
       input.addEventListener('keydown', function(e) { e.stopPropagation(); });
     });
 
+    // Color picker selection click handler
+    document.querySelectorAll('.color-dot-opt').forEach(function(dot) {
+      dot.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectedColorIdx = parseInt(this.getAttribute('data-index'));
+        localStorage.setItem('flappy_color_index', selectedColorIdx);
+        document.querySelectorAll('.color-dot-opt').forEach(function(d) {
+          d.classList.remove('selected');
+        });
+        this.classList.add('selected');
+      });
+    });
+
     document.getElementById('singleBtn').addEventListener('click', function(e) {
       e.stopPropagation();
       const name = document.getElementById('nameInput').value.trim() || 'Player';
@@ -645,7 +685,7 @@
       myId = 1;
       isHost = true;
 
-      const colorIdx = Math.floor(Math.random() * PLAYER_COLORS.length);
+      const colorIdx = selectedColorIdx;
       allPlayersInfo = [{
         id: 1,
         name: name,
@@ -665,7 +705,7 @@
       localStorage.setItem('flappy_name', name);
       ensureAudio();
       gameState = 'lobby';
-      sendMsg({ type: 'create', name: name });
+      sendMsg({ type: 'create', name: name, colorIndex: selectedColorIdx });
     });
 
     document.getElementById('joinBtn').addEventListener('click', function(e) {
@@ -676,7 +716,7 @@
       localStorage.setItem('flappy_name', name);
       ensureAudio();
       gameState = 'lobby';
-      sendMsg({ type: 'join', code: code, name: name });
+      sendMsg({ type: 'join', code: code, name: name, colorIndex: selectedColorIdx });
     });
 
     // Enter key on code input
@@ -1123,15 +1163,15 @@
 
   function drawPlayerLabel(x, y, r, name, color, alive, opacityMultiplier = 1) {
     const alpha = (alive ? 1 : 0.4) * opacityMultiplier;
-    const yPos = y - r - 10*scale;
+    const yPos = y - r - 8*scale;
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = 'bold ' + Math.round(10*scale) + 'px Outfit, sans-serif';
+    ctx.font = Math.round(7*scale) + 'px Outfit, sans-serif';
     const tw = ctx.measureText(name).width;
-    const pw = tw + 12*scale; const ph = 16*scale;
+    const pw = tw + 8*scale; const ph = 11*scale;
     const px = x - pw/2; const py = yPos - ph/2;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    const rad = 6*scale;
+    const rad = 4*scale;
     ctx.beginPath();
     ctx.moveTo(px+rad, py); ctx.lineTo(px+pw-rad, py);
     ctx.quadraticCurveTo(px+pw, py, px+pw, py+rad);
@@ -1143,7 +1183,7 @@
     ctx.quadraticCurveTo(px, py, px+rad, py);
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = color.body;
-    ctx.fillRect(px, py + 3*scale, 3*scale, ph - 6*scale);
+    ctx.fillRect(px, py + 2*scale, 2*scale, ph - 4*scale);
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(name, x, yPos);
     ctx.restore();
@@ -1153,7 +1193,11 @@
     const grad = ctx.createLinearGradient(x, 0, x + PIPE_W, 0);
     grad.addColorStop(0, '#15803d'); grad.addColorStop(0.3, '#4ade80'); grad.addColorStop(1, '#166534');
     ctx.fillStyle = grad; ctx.strokeStyle = '#14532d'; ctx.lineWidth = 3*scale;
-    ctx.fillRect(x, 0, PIPE_W, top); ctx.strokeRect(x, 0, PIPE_W, top);
+    
+    // Draw top pipe from the very top of the canvas viewport (-offsetY / s)
+    const topY = -offsetY / s;
+    ctx.fillRect(x, topY, PIPE_W, top - topY); ctx.strokeRect(x, topY, PIPE_W, top - topY);
+    
     ctx.fillRect(x - 4*scale, top - 20*scale, PIPE_W + 8*scale, 20*scale);
     ctx.strokeRect(x - 4*scale, top - 20*scale, PIPE_W + 8*scale, 20*scale);
     const by = top + gap;
