@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Flappy Bird Online Multiplayer</title>
+<!-- Set this to your Render.com WebSocket URL after deploying backend -->
+<meta name="flappy-ws-url" content="__FLAPPY_WS_URL__">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; width: 100%; overflow: hidden;
+    background: #111827;
+    font-family: 'Outfit', sans-serif;
+    touch-action: none; -webkit-user-select: none; user-select: none;
+    overscroll-behavior: none; position: fixed; inset: 0;
+  }
+  body { display: flex; align-items: center; justify-content: center; }
+  #wrap {
+    position: relative; width: 100%; height: 100dvh;
+    max-width: 480px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    background: #4ec0ca; overflow: hidden;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  /* ===== OVERLAY ===== */
+  #overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff; text-align: center;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 20px; z-index: 10;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+  }
+  .card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 24px; padding: 28px 22px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #overlay h1 {
+    font-family: 'Press Start 2P', monospace; font-size: 20px;
+    text-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    color: #ffd000; -webkit-text-stroke: 1.5px #3a2a00;
+    letter-spacing: -1px;
+  }
+  #overlay h2 {
+    font-family: 'Press Start 2P', monospace; font-size: 13px;
+    color: #ffd000; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  #overlay p { font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); line-height: 1.6; font-weight: 500; }
+
+  .btn {
+    background: linear-gradient(135deg, #f7d51d, #e5be15);
+    color: #432; border: 3px solid #432;
+    padding: 14px 28px;
+    font-family: 'Press Start 2P', monospace; font-size: 12px; font-weight: 700;
+    border-radius: 14px; cursor: pointer;
+    box-shadow: 0 5px 0 #432;
+    transition: transform 0.05s, box-shadow 0.05s;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #432; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+    color: #fff; border: 2px solid rgba(255,255,255,0.3);
+    padding: 12px 24px;
+    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700;
+    border-radius: 12px; cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    transition: transform 0.05s, box-shadow 0.05s;
+    touch-action: manipulation;
+  }
+  .btn-secondary:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+
+  .hidden { display: none !important; }
+
+  #muteBtn {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    width: 44px; height: 44px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    color: #fff; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 15; touch-action: manipulation; transition: all 0.1s ease;
+  }
+  #muteBtn:active { transform: scale(0.9); }
+
+  /* ===== LOBBY INPUT STYLES ===== */
+  .input-group {
+    width: 100%; display: flex; flex-direction: column; gap: 6px;
+  }
+  .input-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; opacity: 0.7; text-align: left;
+  }
+  .text-input {
+    width: 100%;
+    background: rgba(0,0,0,0.25); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 12px 14px;
+    color: #fff; font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 600;
+    outline: none; transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: rgba(255,255,255,0.5); }
+  .text-input::placeholder { color: rgba(255,255,255,0.3); font-weight: 400; }
+
+  .room-code-input {
+    font-family: 'Press Start 2P', monospace; font-size: 20px;
+    text-align: center; letter-spacing: 8px; text-transform: uppercase;
+    padding: 14px;
+  }
+
+  .or-divider {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    font-size: 12px; font-weight: 700; opacity: 0.5; text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.2);
+  }
+
+  .btn-row { display: flex; gap: 10px; width: 100%; }
+  .btn-row > * { flex: 1; }
+
+  /* ===== ROOM CODE DISPLAY ===== */
+  .room-code-display {
+    background: rgba(0,0,0,0.3); border-radius: 16px;
+    padding: 16px; width: 100%; text-align: center;
+    border: 2px dashed rgba(255,255,255,0.2);
+  }
+  .room-code-display .label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 700; }
+  .room-code-display .code {
+    font-family: 'Press Start 2P', monospace; font-size: 32px;
+    color: #fde047; letter-spacing: 10px; text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  }
+  .room-code-display .hint { font-size: 11px; opacity: 0.5; margin-top: 8px; }
+
+  /* ===== PLAYER LIST ===== */
+  .player-list { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .player-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.08); border-radius: 12px;
+    padding: 10px 14px; border: 2px solid rgba(255,255,255,0.08);
+    transition: all 0.2s;
+  }
+  .player-item.you { border-color: rgba(253, 224, 71, 0.4); background: rgba(253, 224, 71, 0.08); }
+  .player-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .player-name { flex: 1; font-size: 15px; font-weight: 700; }
+  .player-badge {
+    font-size: 10px; font-family: 'Press Start 2P', monospace;
+    color: #fde047; opacity: 0.8;
+  }
+
+  /* ===== WAITING DOTS ===== */
+  .waiting-dots::after {
+    content: ''; animation: dots 1.5s infinite;
+  }
+  @keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+  }
+
+  /* ===== CONNECTION STATUS ===== */
+  .conn-status {
+    position: absolute; top: max(16px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 10px; padding: 6px 12px;
+    z-index: 15; font-size: 11px; font-weight: 700; color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.1);
+  }
+  .conn-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4ade80; box-shadow: 0 0 6px #4ade80;
+  }
+  .conn-dot.disconnected { background: #f87171; box-shadow: 0 0 6px #f87171; }
+  .conn-dot.connecting { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ===== SCOREBOARD (in-game) ===== */
+  #scoreboard {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; z-index: 5; pointer-events: none;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-radius: 10px; padding: 5px 10px 5px 6px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .sb-item.dead { opacity: 0.4; }
+  .sb-item.you { border-color: rgba(253,224,71,0.5); }
+  .sb-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0; }
+  .sb-name { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: #fff; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb-score { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fde047; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  .sb-bounce { transform: scale(1.2) !important; }
+
+  /* ===== LEADERBOARD (game over) ===== */
+  .leaderboard { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.1);
+  }
+  .lb-row.first { background: rgba(253,224,71,0.15); border-color: rgba(253,224,71,0.4); }
+  .lb-row.you { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+  .lb-rank { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+  .lb-color { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0; }
+  .lb-name { flex: 1; font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-score-val { font-family: 'Press Start 2P', monospace; font-size: 16px; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+
+  /* ===== ERROR TOAST ===== */
+  .error-toast {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(239, 68, 68, 0.9); backdrop-filter: blur(8px);
+    color: #fff; padding: 10px 20px; border-radius: 12px;
+    font-size: 13px; font-weight: 700; z-index: 20;
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
+    pointer-events: none;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="scoreboard" class="hidden"></div>
+  <div class="conn-status" id="connStatus">
+    <div class="conn-dot connecting" id="connDot"></div>
+    <span id="connText">Đang kết nối...</span>
+  </div>
+  <button id="muteBtn" aria-label="Bật/tắt âm thanh">🔊</button>
+  <div id="overlay"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const scoreboardEl = document.getElementById('scoreboard');
+  const wrap = document.getElementById('wrap');
+  const muteBtn = document.getElementById('muteBtn');
+  const connDot = document.getElementById('connDot');
+  const connText = document.getElementById('connText');
+
+  // ===== PLAYER COLORS =====
+  const PLAYER_COLORS = [
+    { body: '#fde047', stroke: '#ca8a04', name: 'Vàng',  wing: '#fff8dc' },
+    { body: '#f472b6', stroke: '#be185d', name: 'Hồng',  wing: '#fce7f3' },
+    { body: '#60a5fa', stroke: '#1d4ed8', name: 'Xanh',  wing: '#dbeafe' },
+    { body: '#a78bfa', stroke: '#6d28d9', name: 'Tím',   wing: '#ede9fe' },
+  ];
+
+  // ===== GEOMETRY =====
+  let W = 360, H = 640, dpr = 1, scale = 1;
+  let BIRD_R, PIPE_W, GAP_BASE, GROUND_H, GRAV, JUMP_V, SPEED_BASE, SPACING, BIRD_X;
+
+  function recomputeScale() {
+    scale = Math.min(W / 360, H / 640);
+    if (scale < 0.5) scale = 0.5;
+    if (scale > 2.0) scale = 2.0;
+    BIRD_R    = 13  * scale;
+    PIPE_W    = 60  * scale;
+    GAP_BASE  = 136 * scale;
+    GROUND_H  = 76  * scale;
+    GRAV      = 0.40 * scale;
+    JUMP_V    = 7.0  * scale;
+    SPEED_BASE= 2.0  * scale;
+    SPACING   = W * 0.65;
+    BIRD_X    = W * 0.28;
+  }
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    W = Math.max(200, Math.round(rect.width));
+    H = Math.max(300, Math.round(rect.height));
+    dpr = window.devicePixelRatio || 1;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    recomputeScale();
+  }
+
+  // ===== AUDIO =====
+  let audioCtx = null;
+  let muted = (localStorage.getItem('flappy_muted') === '1');
+  updateMuteIcon();
+
+  function ensureAudio() {
+    if (muted) return null;
+    if (audioCtx) return audioCtx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { audioCtx = new AC(); } catch(e) { audioCtx = null; }
+    return audioCtx;
+  }
+
+  function tone(freq, dur, type, gainVal, freqEnd) {
+    const ac = ensureAudio();
+    if (!ac || muted) return;
+    try {
+      if (ac.state === 'suspended') ac.resume();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = type || 'square';
+      o.frequency.setValueAtTime(freq, ac.currentTime);
+      if (freqEnd != null) o.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), ac.currentTime + dur);
+      g.gain.setValueAtTime(gainVal == null ? 0.12 : gainVal, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(); o.stop(ac.currentTime + dur + 0.02);
+    } catch(e) {}
+  }
+
+  function sndFlap()  { tone(440, 0.10, 'square', 0.10, 280); }
+  function sndScore() { tone(587, 0.08, 'square', 0.12); setTimeout(function(){ tone(880, 0.12, 'square', 0.12); }, 65); }
+  function sndHit()   { tone(150, 0.15, 'sawtooth', 0.18, 60); setTimeout(function(){ tone(70, 0.20, 'sawtooth', 0.15, 40); }, 80); }
+
+  function updateMuteIcon() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  muteBtn.addEventListener('click', function(e) {
+    e.stopPropagation(); muted = !muted;
+    localStorage.setItem('flappy_muted', muted ? '1' : '0');
+    updateMuteIcon();
+    if (!muted) ensureAudio();
+  });
+  window.addEventListener('touchstart', function() {
+    const ac = ensureAudio(); if (ac && ac.state === 'suspended') ac.resume();
+  }, { once: true });
+
+  // ===== SEEDED RANDOM (for synchronized pipes) =====
+  let rngSeed = 12345;
+  function seededRandom() {
+    rngSeed = (rngSeed * 16807 + 0) % 2147483647;
+    return (rngSeed - 1) / 2147483646;
+  }
+
+  // ===== GAME STATE =====
+  let gameState = 'menu'; // menu | lobby | waiting | playing | dead
+  let myId = null;
+  let myPlayer = null;
+  let remotePlayers = {}; // id -> { targetY, targetRot, ... }
+  let allPlayersInfo = []; // from server
+  let pipes = [];
+  let stepCount = 0;
+  let distSinceSpawn = 0;
+  let particles = [];
+  let shakeTimer = 0;
+  let shakeIntensity = 0;
+  let flashAlpha = 0;
+  let myScore = 0;
+  let deathTime = 0;
+  let roomCode = '';
+  let isHost = false;
+
+  let best = parseInt(localStorage.getItem('flappy_best') || '0', 10) || 0;
+
+  function gapFor(s) { return Math.max(GAP_BASE * 0.70, GAP_BASE - s * 1.2 * scale); }
+  function speedFor(s) { return SPEED_BASE * (1 + Math.min(0.5, s * 0.012)); }
+
+  // ===== WEBSOCKET =====
+  let ws = null;
+  let wsReady = false;
+  let syncInterval = null;
+  let reconnectTimer = null;
+
+  function getWsUrl() {
+    // 1. Runtime override (set in browser console or injected by build)
+    if (window.FLAPPY_WS_URL) return window.FLAPPY_WS_URL;
+    // 2. Meta tag (set at deploy time)
+    const metaUrl = document.querySelector('meta[name="flappy-ws-url"]');
+    if (metaUrl) {
+      const v = metaUrl.getAttribute('content');
+      if (v && !v.startsWith('__')) return v; // skip placeholder
+    }
+    // 3. Same-host fallback (works for local dev & if backend+frontend co-located)
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    return proto + '://' + location.host;
+  }
+
+  function connectWs() {
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    setConnStatus('connecting');
+
+    try {
+      ws = new WebSocket(getWsUrl());
+    } catch(e) {
+      setConnStatus('disconnected');
+      scheduleReconnect();
+      return;
+    }
+
+    ws.onopen = function() {
+      wsReady = true;
+      setConnStatus('connected');
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    };
+
+    ws.onclose = function() {
+      wsReady = false;
+      setConnStatus('disconnected');
+      stopSyncLoop();
+      if (gameState === 'playing') {
+        // Lost connection during game
+        showError('Mất kết nối!');
+      }
+      scheduleReconnect();
+    };
+
+    ws.onerror = function() {};
+
+    ws.onmessage = function(evt) {
+      let msg;
+      try { msg = JSON.parse(evt.data); } catch(e) { return; }
+      handleServerMsg(msg);
+    };
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(function() {
+      reconnectTimer = null;
+      connectWs();
+    }, 2000);
+  }
+
+  function sendMsg(msg) {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify(msg));
+    }
+  }
+
+  function setConnStatus(status) {
+    connDot.className = 'conn-dot';
+    if (status === 'connected') {
+      // green is default from .conn-dot CSS
+      connText.textContent = 'Đã kết nối';
+    } else if (status === 'connecting') {
+      connDot.classList.add('connecting');
+      connText.textContent = 'Đang kết nối...';
+    } else {
+      connDot.classList.add('disconnected');
+      connText.textContent = 'Mất kết nối';
+    }
+  }
+
+  // ===== HANDLE SERVER MESSAGES =====
+  function handleServerMsg(msg) {
+    switch (msg.type) {
+      case 'room':
+        roomCode = msg.code;
+        if (msg.yourId) myId = msg.yourId;
+        isHost = (msg.hostId === myId);
+        allPlayersInfo = msg.players || [];
+        if (gameState === 'lobby' || gameState === 'waiting' || gameState === 'menu') {
+          gameState = 'waiting';
+          showWaitingRoom();
+        }
+        break;
+
+      case 'go':
+        rngSeed = msg.seed;
+        allPlayersInfo = msg.players || allPlayersInfo;
+        startGame();
+        break;
+
+      case 'sync':
+        // Update remote players' positions
+        if (!msg.states) break;
+        for (const id in msg.states) {
+          const numId = parseInt(id);
+          if (numId === myId) continue;
+          const st = msg.states[id];
+          if (!remotePlayers[numId]) {
+            remotePlayers[numId] = { y: H/2, vy: 0, rot: 0, score: 0, alive: true, wingPhase: 0, flapTimer: 0 };
+          }
+          const rp = remotePlayers[numId];
+          rp.targetY = st.y * H; // normalized
+          rp.vy = st.vy;
+          rp.rot = st.rot;
+          rp.score = st.score;
+          rp.alive = st.alive;
+          rp.wingPhase = st.wingPhase || rp.wingPhase;
+          rp.flapTimer = st.flapTimer || 0;
+        }
+        updateScoreboard();
+        break;
+
+      case 'gameover':
+        if (gameState === 'dead') break;
+        gameState = 'dead';
+        deathTime = performance.now();
+        stopSyncLoop();
+        if (msg.rankings) {
+          setTimeout(function() { showGameOverScreen(msg.rankings); }, 500);
+        }
+        break;
+
+      case 'error':
+        showError(msg.msg);
+        break;
+    }
+  }
+
+  // ===== SYNC LOOP =====
+  function startSyncLoop() {
+    stopSyncLoop();
+    syncInterval = setInterval(function() {
+      if (gameState !== 'playing' || !myPlayer) return;
+      sendMsg({
+        type: 'state',
+        y: myPlayer.y / H, // normalize to 0-1
+        vy: myPlayer.vy,
+        rot: myPlayer.rot,
+        score: myScore,
+        alive: myPlayer.alive,
+        wingPhase: myPlayer.wingPhase,
+        flapTimer: myPlayer.flapTimer,
+      });
+    }, 50); // 20fps sync
+  }
+
+  function stopSyncLoop() {
+    if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+  }
+
+  // ===== UI SCREENS =====
+  function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function showError(msg) {
+    // Remove existing toasts
+    document.querySelectorAll('.error-toast').forEach(el => el.remove());
+    const toast = document.createElement('div');
+    toast.className = 'error-toast';
+    toast.textContent = msg;
+    wrap.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 3000);
+  }
+
+  function showMenu() {
+    gameState = 'menu';
+    overlay.classList.remove('hidden');
+    scoreboardEl.classList.add('hidden');
+
+    const savedName = localStorage.getItem('flappy_name') || '';
+
+    overlay.innerHTML =
+      '<div class="card">' +
+        '<h1>FLAPPY BIRD</h1>' +
+        '<p>Multiplayer Online 🌐</p>' +
+        '<div class="input-group">' +
+          '<span class="input-label">Tên của bạn</span>' +
+          '<input type="text" class="text-input" id="nameInput" placeholder="Nhập tên..." maxlength="12" value="' + escHtml(savedName) + '">' +
+        '</div>' +
+        '<button class="btn" id="createBtn" style="width:100%">TẠO PHÒNG</button>' +
+        '<div class="or-divider">hoặc</div>' +
+        '<div class="input-group">' +
+          '<span class="input-label">Mã phòng</span>' +
+          '<input type="text" class="text-input room-code-input" id="codeInput" placeholder="XXXX" maxlength="4">' +
+        '</div>' +
+        '<button class="btn-secondary" id="joinBtn" style="width:100%">VÀO PHÒNG</button>' +
+      '</div>';
+
+    // Prevent game input from inputs
+    document.querySelectorAll('#overlay input').forEach(function(input) {
+      input.addEventListener('keydown', function(e) { e.stopPropagation(); });
+    });
+
+    document.getElementById('createBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const name = document.getElementById('nameInput').value.trim() || 'Player';
+      localStorage.setItem('flappy_name', name);
+      ensureAudio();
+      gameState = 'lobby';
+      sendMsg({ type: 'create', name: name });
+    });
+
+    document.getElementById('joinBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const name = document.getElementById('nameInput').value.trim() || 'Player';
+      const code = document.getElementById('codeInput').value.trim().toUpperCase();
+      if (code.length !== 4) { showError('Mã phòng phải có 4 ký tự!'); return; }
+      localStorage.setItem('flappy_name', name);
+      ensureAudio();
+      gameState = 'lobby';
+      sendMsg({ type: 'join', code: code, name: name });
+    });
+
+    // Enter key on code input
+    document.getElementById('codeInput').addEventListener('keydown', function(e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        document.getElementById('joinBtn').click();
+      }
+    });
+  }
+
+  function showWaitingRoom() {
+    overlay.classList.remove('hidden');
+    scoreboardEl.classList.add('hidden');
+
+    let playersHtml = '';
+    allPlayersInfo.forEach(function(p) {
+      const isYou = p.id === myId;
+      playersHtml +=
+        '<div class="player-item' + (isYou ? ' you' : '') + '">' +
+          '<div class="player-dot" style="background:' + p.color.body + ';border-color:' + p.color.stroke + ';">' +
+            (p.colorIndex + 1) +
+          '</div>' +
+          '<span class="player-name">' + escHtml(p.name) + (isYou ? ' (Bạn)' : '') + '</span>' +
+          (p.isHost ? '<span class="player-badge">HOST</span>' : '') +
+        '</div>';
+    });
+
+    const canStart = isHost && allPlayersInfo.length >= 2;
+    const waitingMsg = allPlayersInfo.length < 2
+      ? 'Chờ thêm người chơi<span class="waiting-dots"></span>'
+      : (isHost ? 'Sẵn sàng! Nhấn bắt đầu' : 'Chờ chủ phòng bắt đầu<span class="waiting-dots"></span>');
+
+    overlay.innerHTML =
+      '<div class="card">' +
+        '<h2>PHÒNG CHỜ</h2>' +
+        '<div class="room-code-display">' +
+          '<div class="label">Mã phòng</div>' +
+          '<div class="code">' + escHtml(roomCode) + '</div>' +
+          '<div class="hint">Chia sẻ mã này cho bạn bè</div>' +
+        '</div>' +
+        '<div class="player-list">' + playersHtml + '</div>' +
+        '<p>' + waitingMsg + '</p>' +
+        (canStart
+          ? '<button class="btn" id="goBtn">BẮT ĐẦU</button>'
+          : (isHost
+            ? '<button class="btn" id="goBtn" disabled>CẦN ÍT NHẤT 2 NGƯỜI</button>'
+            : '')
+        ) +
+        '<button class="btn-secondary" id="backBtn" style="width:100%;margin-top:4px">← QUAY LẠI</button>' +
+      '</div>';
+
+    if (document.getElementById('goBtn') && canStart) {
+      document.getElementById('goBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        sendMsg({ type: 'start' });
+      });
+    }
+
+    document.getElementById('backBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      // Disconnect and go back
+      if (ws) ws.close();
+      setTimeout(function() { connectWs(); showMenu(); }, 300);
+    });
+  }
+
+  function showGameOverScreen(rankings) {
+    overlay.classList.remove('hidden');
+    scoreboardEl.classList.add('hidden');
+
+    const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣'];
+    let lbHtml = '';
+    rankings.forEach(function(p, i) {
+      const isYou = p.id === myId;
+      lbHtml +=
+        '<div class="lb-row' + (i === 0 ? ' first' : '') + (isYou ? ' you' : '') + '">' +
+          '<span class="lb-rank">' + rankEmojis[i] + '</span>' +
+          '<div class="lb-color" style="background:' + p.color.body + ';"></div>' +
+          '<span class="lb-name">' + escHtml(p.name) + (isYou ? ' (Bạn)' : '') + '</span>' +
+          '<span class="lb-score-val">' + p.score + '</span>' +
+        '</div>';
+    });
+
+    overlay.innerHTML =
+      '<div class="card">' +
+        '<h1>KẾT QUẢ</h1>' +
+        '<div class="leaderboard">' + lbHtml + '</div>' +
+        (isHost
+          ? '<button class="btn" id="restartBtn">CHƠI LẠI</button>'
+          : '<p>Chờ chủ phòng<span class="waiting-dots"></span></p>'
+        ) +
+        '<button class="btn-secondary" id="menuBtn" style="width:100%">← VỀ MENU</button>' +
+      '</div>';
+
+    if (document.getElementById('restartBtn')) {
+      document.getElementById('restartBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        sendMsg({ type: 'restart' });
+      });
+    }
+
+    document.getElementById('menuBtn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (ws) ws.close();
+      setTimeout(function() { connectWs(); showMenu(); }, 300);
+    });
+  }
+
+  // ===== SCOREBOARD (in-game) =====
+  function updateScoreboard() {
+    if (gameState !== 'playing') return;
+    let html = '';
+    allPlayersInfo.forEach(function(pInfo) {
+      const isMe = pInfo.id === myId;
+      let score = 0;
+      let alive = true;
+      if (isMe && myPlayer) {
+        score = myScore;
+        alive = myPlayer.alive;
+      } else if (remotePlayers[pInfo.id]) {
+        score = remotePlayers[pInfo.id].score || 0;
+        alive = remotePlayers[pInfo.id].alive !== false;
+      }
+      html +=
+        '<div class="sb-item' + (!alive ? ' dead' : '') + (isMe ? ' you' : '') + '" id="sb-' + pInfo.id + '">' +
+          '<div class="sb-dot" style="background:' + pInfo.color.body + ';"></div>' +
+          '<span class="sb-name">' + escHtml(pInfo.name) + '</span>' +
+          '<span class="sb-score">' + score + '</span>' +
+        '</div>';
+    });
+    scoreboardEl.innerHTML = html;
+  }
+
+  // ===== GAME LOGIC =====
+  function startGame() {
+    gameState = 'playing';
+    overlay.classList.add('hidden');
+    scoreboardEl.classList.remove('hidden');
+
+    pipes = [];
+    particles = [];
+    stepCount = 0;
+    distSinceSpawn = 0;
+    flashAlpha = 0;
+    shakeTimer = 0;
+    myScore = 0;
+    remotePlayers = {};
+
+    // Find my color/info
+    const myInfo = allPlayersInfo.find(p => p.id === myId);
+    const colorIdx = myInfo ? myInfo.colorIndex : 0;
+    const color = PLAYER_COLORS[colorIdx];
+
+    myPlayer = {
+      x: BIRD_X,
+      y: H / 2,
+      vy: 0,
+      r: BIRD_R,
+      rot: 0,
+      flapTimer: 0,
+      wingPhase: Math.random() * Math.PI * 2,
+      alive: true,
+      color: color,
+    };
+
+    // Init remote player positions
+    allPlayersInfo.forEach(function(p) {
+      if (p.id !== myId) {
+        remotePlayers[p.id] = {
+          y: H / 2,
+          targetY: H / 2,
+          vy: 0,
+          rot: 0,
+          score: 0,
+          alive: true,
+          wingPhase: Math.random() * Math.PI * 2,
+          flapTimer: 0,
+          color: PLAYER_COLORS[p.colorIndex],
+        };
+      }
+    });
+
+    updateScoreboard();
+    startSyncLoop();
+    ensureAudio();
+  }
+
+  function jump() {
+    if (gameState !== 'playing' || !myPlayer || !myPlayer.alive) return;
+    myPlayer.vy = -JUMP_V;
+    myPlayer.flapTimer = 0.15;
+    sndFlap();
+    spawnParticles(myPlayer.x - myPlayer.r * 0.5, myPlayer.y + 2, 'rgba(255,255,255,0.75)', 6, -3 - Math.random() * 2, (Math.random() - 0.5) * 2, 2.5);
+  }
+
+  function spawnParticles(x, y, color, count, vx, vy, baseSize) {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (vx + (Math.random() - 0.5) * 1.5) * scale,
+        vy: (vy + (Math.random() - 0.5) * 1.5) * scale,
+        alpha: 1.0, decay: 0.02 + Math.random() * 0.02,
+        size: (baseSize + Math.random() * baseSize) * scale,
+        color: color
+      });
+    }
+  }
+
+  function updateParticles() {
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+    }
+    particles = particles.filter(p => p.alpha > 0);
+  }
+
+  function spawnPipe() {
+    const gap = gapFor(myScore);
+    const minTop = 60 * scale;
+    const maxTop = H - GROUND_H - gap - 60 * scale;
+    const top = minTop + seededRandom() * Math.max(1, (maxTop - minTop));
+    pipes.push({ x: W + 10, top: top, passed: false, gap: gap });
+  }
+
+  function update() {
+    if (!myPlayer) return;
+    stepCount++;
+    const speed = speedFor(myScore);
+
+    // My bird physics
+    if (myPlayer.alive) {
+      myPlayer.vy += GRAV;
+      myPlayer.y += myPlayer.vy;
+      myPlayer.rot = Math.max(-0.4, Math.min(1.2, myPlayer.vy * 0.08));
+
+      if (myPlayer.flapTimer > 0) {
+        myPlayer.flapTimer -= 1/60;
+        myPlayer.wingPhase += 0.5;
+      } else {
+        myPlayer.wingPhase += 0.12;
+      }
+
+      // Pipe collision
+      for (let i = 0; i < pipes.length; i++) {
+        const p = pipes[i];
+        if (myPlayer.x + myPlayer.r > p.x && myPlayer.x - myPlayer.r < p.x + PIPE_W) {
+          if (myPlayer.y - myPlayer.r < p.top || myPlayer.y + myPlayer.r > p.top + p.gap) {
+            killMyPlayer();
+            break;
+          }
+        }
+      }
+
+      // Bounds collision
+      if (myPlayer.alive && (myPlayer.y + myPlayer.r > H - GROUND_H || myPlayer.y - myPlayer.r < 0)) {
+        killMyPlayer();
+      }
+    }
+
+    // Pipes
+    distSinceSpawn += speed;
+    if (distSinceSpawn >= SPACING) {
+      distSinceSpawn -= SPACING;
+      spawnPipe();
+    }
+
+    for (let i = 0; i < pipes.length; i++) {
+      const p = pipes[i];
+      p.x -= speed;
+      if (!p.passed && p.x + PIPE_W < BIRD_X) {
+        p.passed = true;
+        if (myPlayer.alive) {
+          myScore++;
+          sndScore();
+          spawnParticles(myPlayer.x + myPlayer.r, myPlayer.y, myPlayer.color.body, 8, 1, (Math.random()-0.5)*3, 3);
+          updateScoreboard();
+        }
+      }
+    }
+    pipes = pipes.filter(p => p.x + PIPE_W > -20);
+
+    // Interpolate remote players
+    for (const id in remotePlayers) {
+      const rp = remotePlayers[id];
+      if (rp.targetY != null) {
+        rp.y += (rp.targetY - rp.y) * 0.25; // smooth interpolation
+      }
+      rp.wingPhase += 0.12;
+    }
+  }
+
+  function killMyPlayer() {
+    if (!myPlayer.alive) return;
+    myPlayer.alive = false;
+    sndHit();
+    shakeTimer = 0.15;
+    shakeIntensity = 6 * scale;
+    flashAlpha = 0.5;
+    spawnParticles(myPlayer.x, myPlayer.y, myPlayer.color.body, 15, (Math.random()-0.5)*4, -2, 3);
+    updateScoreboard();
+
+    // Send death state immediately
+    sendMsg({
+      type: 'state',
+      y: myPlayer.y / H,
+      vy: myPlayer.vy,
+      rot: myPlayer.rot,
+      score: myScore,
+      alive: false,
+      wingPhase: myPlayer.wingPhase,
+      flapTimer: 0,
+    });
+
+    if (myScore > best) {
+      best = myScore;
+      localStorage.setItem('flappy_best', String(best));
+    }
+  }
+
+  // ===== DRAWING =====
+  function drawClouds() {
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    for (let i = 0; i < 3; i++) {
+      const cx = ((stepCount * 0.15 + i * (W * 0.45)) % (W + 120)) - 60;
+      const cy = 40 * scale + i * 20 * scale;
+      const r = 24 * scale;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.arc(cx + 20*scale, cy - 4*scale, 18*scale, 0, Math.PI*2);
+      ctx.arc(cx - 18*scale, cy + 4*scale, 15*scale, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function drawSkyline(offset, speedScale, color, heightMultiplier, buildingWidth) {
+    ctx.fillStyle = color;
+    const count = Math.ceil(W / buildingWidth) + 2;
+    const startX = -(offset * speedScale) % buildingWidth;
+    for (let i = 0; i < count; i++) {
+      const bx = startX + i * buildingWidth;
+      const buildingIdx = Math.floor((offset * speedScale) / buildingWidth) + i;
+      const h = (45 + (Math.abs(Math.sin(buildingIdx * 17.53)) * 75)) * heightMultiplier * scale;
+      const by = H - GROUND_H - h;
+      ctx.fillRect(bx, by, buildingWidth + 1, h);
+      ctx.fillStyle = 'rgba(253,224,71,0.18)';
+      const rowGap = 12*scale; const colGap = 8*scale;
+      const winRows = Math.floor((h - 8*scale) / rowGap);
+      const winCols = Math.floor((buildingWidth - 8*scale) / colGap);
+      for (let r = 1; r < winRows; r++) {
+        for (let c = 1; c < winCols; c++) {
+          if (Math.sin(buildingIdx*3 + r*5 + c) > 0.05) {
+            ctx.fillRect(bx + c*colGap, by + r*rowGap, 3*scale, 4*scale);
+          }
+        }
+      }
+      ctx.fillStyle = color;
+    }
+  }
+
+  function drawBird(x, y, rot, wingPhase, flapTimer, r, color, alive) {
+    if (!color) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    ctx.fillStyle = color.body;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+    ctx.lineWidth = 2.5*scale; ctx.strokeStyle = color.stroke; ctx.stroke();
+
+    const wingY = Math.sin(wingPhase) * 3*scale;
+    ctx.fillStyle = color.wing; ctx.strokeStyle = color.stroke;
+    ctx.beginPath();
+    ctx.ellipse(-3*scale, 3*scale + wingY, 8*scale, 5*scale, -0.2, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(5*scale, -4*scale, 5*scale, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = color.stroke; ctx.lineWidth = 2*scale; ctx.stroke();
+
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(6*scale, -4*scale, 2.2*scale, 0, Math.PI*2); ctx.fill();
+
+    if (!alive) {
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 2*scale;
+      ctx.beginPath();
+      ctx.moveTo(4*scale, -6*scale); ctx.lineTo(8*scale, -2*scale);
+      ctx.moveTo(8*scale, -6*scale); ctx.lineTo(4*scale, -2*scale);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#f97316'; ctx.strokeStyle = color.stroke;
+    ctx.beginPath();
+    ctx.moveTo(r - 2*scale, -2*scale);
+    ctx.lineTo(r + 7*scale, 0);
+    ctx.lineTo(r - 2*scale, 4*scale);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawPlayerLabel(x, y, r, name, color, alive) {
+    const alpha = alive ? 1 : 0.4;
+    const yPos = y - r - 10*scale;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold ' + Math.round(10*scale) + 'px Outfit, sans-serif';
+    const tw = ctx.measureText(name).width;
+    const pw = tw + 12*scale; const ph = 16*scale;
+    const px = x - pw/2; const py = yPos - ph/2;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    const rad = 6*scale;
+    ctx.beginPath();
+    ctx.moveTo(px+rad, py); ctx.lineTo(px+pw-rad, py);
+    ctx.quadraticCurveTo(px+pw, py, px+pw, py+rad);
+    ctx.lineTo(px+pw, py+ph-rad);
+    ctx.quadraticCurveTo(px+pw, py+ph, px+pw-rad, py+ph);
+    ctx.lineTo(px+rad, py+ph);
+    ctx.quadraticCurveTo(px, py+ph, px, py+ph-rad);
+    ctx.lineTo(px, py+rad);
+    ctx.quadraticCurveTo(px, py, px+rad, py);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = color.body;
+    ctx.fillRect(px, py + 3*scale, 3*scale, ph - 6*scale);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(name, x, yPos);
+    ctx.restore();
+  }
+
+  function drawPipe(x, top, gap) {
+    const grad = ctx.createLinearGradient(x, 0, x + PIPE_W, 0);
+    grad.addColorStop(0, '#15803d'); grad.addColorStop(0.3, '#4ade80'); grad.addColorStop(1, '#166534');
+    ctx.fillStyle = grad; ctx.strokeStyle = '#14532d'; ctx.lineWidth = 3*scale;
+    ctx.fillRect(x, 0, PIPE_W, top); ctx.strokeRect(x, 0, PIPE_W, top);
+    ctx.fillRect(x - 4*scale, top - 20*scale, PIPE_W + 8*scale, 20*scale);
+    ctx.strokeRect(x - 4*scale, top - 20*scale, PIPE_W + 8*scale, 20*scale);
+    const by = top + gap;
+    ctx.fillRect(x, by, PIPE_W, H - GROUND_H - by); ctx.strokeRect(x, by, PIPE_W, H - GROUND_H - by);
+    ctx.fillRect(x - 4*scale, by, PIPE_W + 8*scale, 20*scale);
+    ctx.strokeRect(x - 4*scale, by, PIPE_W + 8*scale, 20*scale);
+  }
+
+  function drawParticles() {
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (shakeTimer > 0) {
+      ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
+    }
+
+    // Sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, '#22d3ee'); skyGrad.addColorStop(0.7, '#a5f3fc'); skyGrad.addColorStop(1, '#ecfeff');
+    ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, H);
+
+    drawClouds();
+    drawSkyline(stepCount, 0.22, 'rgba(103,232,249,0.45)', 1.0, 56*scale);
+    drawSkyline(stepCount, 0.50, 'rgba(34,211,238,0.35)', 0.7, 40*scale);
+
+    // Pipes
+    for (let i = 0; i < pipes.length; i++) {
+      drawPipe(pipes[i].x, pipes[i].top, pipes[i].gap);
+    }
+
+    drawParticles();
+
+    // Ground
+    const spd = gameState === 'dead' ? 0 : speedFor(myScore);
+    const gOff = (stepCount * spd) % (20*scale);
+    ctx.fillStyle = '#e2d99b'; ctx.fillRect(0, H-GROUND_H, W, GROUND_H);
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(0, H-GROUND_H, W, 14*scale);
+    ctx.fillStyle = '#16a34a';
+    for (let gx = -gOff; gx < W + 20*scale; gx += 20*scale) {
+      ctx.beginPath();
+      ctx.moveTo(gx, H-GROUND_H); ctx.lineTo(gx+8*scale, H-GROUND_H);
+      ctx.lineTo(gx-4*scale, H-GROUND_H+14*scale); ctx.lineTo(gx-12*scale, H-GROUND_H+14*scale);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(0, H-GROUND_H, W, 2*scale);
+    ctx.fillRect(0, H-GROUND_H+14*scale, W, 2*scale);
+
+    // Draw remote birds first (behind)
+    for (const id in remotePlayers) {
+      const rp = remotePlayers[id];
+      const info = allPlayersInfo.find(p => p.id === parseInt(id));
+      if (!info) continue;
+      const color = PLAYER_COLORS[info.colorIndex];
+      ctx.save();
+      ctx.globalAlpha = rp.alive ? 0.85 : 0.3;
+      drawBird(BIRD_X, rp.y, rp.rot, rp.wingPhase, rp.flapTimer, BIRD_R, color, rp.alive);
+      ctx.restore();
+      drawPlayerLabel(BIRD_X, rp.y, BIRD_R, info.name, color, rp.alive);
+    }
+
+    // Draw my bird on top
+    if (myPlayer) {
+      const myInfo = allPlayersInfo.find(p => p.id === myId);
+      const myName = myInfo ? myInfo.name : 'Bạn';
+
+      if (myPlayer.alive) {
+        drawBird(myPlayer.x, myPlayer.y, myPlayer.rot, myPlayer.wingPhase, myPlayer.flapTimer, myPlayer.r, myPlayer.color, true);
+        drawPlayerLabel(myPlayer.x, myPlayer.y, myPlayer.r, myName, myPlayer.color, true);
+      } else {
+        ctx.save(); ctx.globalAlpha = 0.4;
+        drawBird(myPlayer.x, myPlayer.y, 1.2, myPlayer.wingPhase, 0, myPlayer.r, myPlayer.color, false);
+        ctx.restore();
+        drawPlayerLabel(myPlayer.x, myPlayer.y, myPlayer.r, myName, myPlayer.color, false);
+      }
+    }
+
+    // Idle preview birds (menu/waiting)
+    if (gameState === 'menu' || gameState === 'waiting' || gameState === 'lobby') {
+      const previewColor = PLAYER_COLORS[0];
+      const py = H/2 + Math.sin(stepCount * 0.08) * 12*scale;
+      const prot = Math.sin(stepCount * 0.08) * 0.1;
+      drawBird(BIRD_X, py, prot, stepCount * 0.12, 0, BIRD_R, previewColor, true);
+    }
+
+    // Flash
+    if (flashAlpha > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + flashAlpha + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ===== GAME LOOP =====
+  const STEP = 1/60;
+  let acc = 0, last = 0, paused = false;
+
+  function loop(now) {
+    if (!last) last = now;
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.1) dt = 0.1;
+    if (dt < 0) dt = 0;
+
+    if (!paused) {
+      acc += dt;
+      let guard = 0;
+      while (acc >= STEP && guard < 8) {
+        if (gameState === 'playing') {
+          update();
+        } else {
+          stepCount++;
+        }
+        updateParticles();
+        if (shakeTimer > 0) shakeTimer -= STEP;
+        acc -= STEP;
+        guard++;
+      }
+      if (flashAlpha > 0) { flashAlpha -= dt * 3.5; if (flashAlpha < 0) flashAlpha = 0; }
+    }
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ===== INPUT =====
+  window.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (gameState === 'playing') jump();
+    }
+  });
+
+  canvas.addEventListener('mousedown', function(e) { e.preventDefault(); if (gameState === 'playing') jump(); });
+  canvas.addEventListener('touchstart', function(e) { e.preventDefault(); ensureAudio(); if (gameState === 'playing') jump(); }, { passive: false });
+
+  overlay.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.btn') || e.target.closest('.btn-secondary') || e.target.closest('input')) return;
+    e.preventDefault();
+    if (gameState === 'playing') jump();
+  }, { passive: false });
+
+  overlay.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.btn') || e.target.closest('.btn-secondary') || e.target.closest('input')) return;
+    e.preventDefault();
+    if (gameState === 'playing') jump();
+  });
+
+  // ===== PAUSE =====
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) { paused = true; } else { paused = false; last = performance.now(); acc = 0; }
+  });
+  window.addEventListener('pagehide', function() { paused = true; });
+
+  // ===== RESIZE =====
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', function() { setTimeout(resize, 250); });
+
+  // ===== BOOT =====
+  resize();
+  connectWs();
+  showMenu();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
