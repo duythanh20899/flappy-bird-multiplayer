@@ -1362,13 +1362,13 @@
   canvas.addEventListener('touchstart', function(e) { e.preventDefault(); ensureAudio(); if (gameState === 'playing') jump(); }, { passive: false });
 
   overlay.addEventListener('touchstart', function(e) {
-    if (e.target.closest('button') || e.target.closest('input')) return;
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.color-dot-opt')) return;
     e.preventDefault();
     if (gameState === 'playing') jump();
   }, { passive: false });
 
   overlay.addEventListener('mousedown', function(e) {
-    if (e.target.closest('button') || e.target.closest('input')) return;
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.color-dot-opt')) return;
     e.preventDefault();
     if (gameState === 'playing') jump();
   });
