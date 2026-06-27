@@ -489,7 +489,9 @@
         if (msg.yourId) myId = msg.yourId;
         isHost = (msg.hostId === myId);
         allPlayersInfo = msg.players || [];
-        if (gameState === 'lobby' || gameState === 'waiting' || gameState === 'menu') {
+        // Handle restart: also accept 'room' when dead or playing (server sent restart)
+        if (gameState === 'lobby' || gameState === 'waiting' || gameState === 'menu' || gameState === 'dead') {
+          stopSyncLoop();
           gameState = 'waiting';
           showWaitingRoom();
         }
@@ -524,7 +526,7 @@
         break;
 
       case 'gameover':
-        if (gameState === 'dead') break;
+        // Always handle gameover from server (even if local player already died)
         gameState = 'dead';
         deathTime = performance.now();
         stopSyncLoop();
