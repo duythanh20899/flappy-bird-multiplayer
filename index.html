@@ -325,6 +325,7 @@
   const W = 360, H = 640;
   let renderW = 360, renderH = 640;
   let dpr = 1, scale = 1, s = 1, offsetX = 0, offsetY = 0;
+  let singlePlayerTotalScore = 0;
   let BIRD_R, PIPE_W, GAP_BASE, GROUND_H, GRAV, JUMP_V, SPEED_BASE, SPACING, BIRD_X;
 
   function recomputeScale() {
@@ -688,6 +689,7 @@
       isSinglePlayer = true;
       myId = 1;
       isHost = true;
+      singlePlayerTotalScore = 0;
 
       const colorIdx = selectedColorIdx;
       allPlayersInfo = [{
@@ -744,7 +746,10 @@
           '<div class="player-dot" style="background:' + p.color.body + ';border-color:' + p.color.stroke + ';">' +
             (p.colorIndex + 1) +
           '</div>' +
-          '<span class="player-name">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
+          '<span class="player-name">' + 
+            escHtml(p.name) + (isYou ? ' (You)' : '') + 
+            (typeof p.totalScore === 'number' && p.totalScore > 0 ? ' <span style="font-size:11px; opacity:0.6; font-weight:normal;">(Total: ' + p.totalScore + ')</span>' : '') +
+          '</span>' +
           (p.isHost ? '<span class="player-badge">HOST</span>' : '') +
         '</div>';
     });
@@ -800,7 +805,10 @@
         '<div class="lb-row' + (i === 0 ? ' first' : '') + (isYou ? ' you' : '') + '">' +
           '<span class="lb-rank">' + rankEmojis[i] + '</span>' +
           '<div class="lb-color" style="background:' + p.color.body + ';"></div>' +
-          '<span class="lb-name">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
+          '<div class="lb-name-group" style="flex:1; display:flex; flex-direction:column; min-width:0; text-align:left;">' +
+            '<span class="lb-name" style="font-size:14px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
+            '<span style="font-size:10px; opacity:0.6; color:#e2e8f0; margin-top:2px;">Total: ' + (p.totalScore || 0) + '</span>' +
+          '</div>' +
           '<span class="lb-score-val">' + p.score + '</span>' +
         '</div>';
     });
@@ -836,6 +844,7 @@
       e.stopPropagation();
       if (isSinglePlayer) {
         isSinglePlayer = false;
+        singlePlayerTotalScore = 0;
         setConnStatus(wsReady ? 'connected' : 'disconnected');
         showMenu();
       } else {
@@ -1058,6 +1067,7 @@
     if (isSinglePlayer) {
       gameState = 'dead';
       deathTime = performance.now();
+      singlePlayerTotalScore += myScore;
       setTimeout(function() {
         const rankings = [{
           id: 1,
@@ -1065,6 +1075,7 @@
           colorIndex: allPlayersInfo[0].colorIndex,
           color: allPlayersInfo[0].color,
           score: myScore,
+          totalScore: singlePlayerTotalScore
         }];
         showGameOverScreen(rankings);
       }, 800);

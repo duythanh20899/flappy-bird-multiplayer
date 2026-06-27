@@ -71,6 +71,7 @@ function getPlayerList(room) {
       colorIndex: p.colorIndex,
       color: PLAYER_COLORS[p.colorIndex],
       isHost: p.id === room.hostId,
+      totalScore: p.totalScore || 0,
     };
   });
 }
@@ -294,6 +295,13 @@ wss.on('connection', function (ws, req) {
         const allDead = room.players.every(function (p) { return !p.alive; });
         if (allDead && room.state === 'playing') {
           room.state = 'ended';
+
+          // Accumulate total scores for all players in the current room session
+          room.players.forEach(function (p) {
+            const roundScore = p.lastState ? p.lastState.score : 0;
+            p.totalScore = (p.totalScore || 0) + roundScore;
+          });
+
           const rankings = room.players.map(function (p) {
             return {
               id: p.id,
@@ -301,6 +309,7 @@ wss.on('connection', function (ws, req) {
               colorIndex: p.colorIndex,
               color: PLAYER_COLORS[p.colorIndex],
               score: p.lastState ? p.lastState.score : 0,
+              totalScore: p.totalScore,
             };
           }).sort(function (a, b) { return b.score - a.score; });
 
