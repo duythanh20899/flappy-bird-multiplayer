@@ -305,7 +305,7 @@
   // ===== GEOMETRY =====
   const W = 360, H = 640;
   let renderW = 360, renderH = 640;
-  let dpr = 1, scale = 1;
+  let dpr = 1, scale = 1, s = 1, offsetX = 0, offsetY = 0;
   let BIRD_R, PIPE_W, GAP_BASE, GROUND_H, GRAV, JUMP_V, SPEED_BASE, SPACING, BIRD_X;
 
   function recomputeScale() {
@@ -330,6 +330,12 @@
     canvas.height = Math.round(renderH * dpr);
     canvas.style.width  = renderW + 'px';
     canvas.style.height = renderH + 'px';
+
+    // Calculate uniform scale and offsets to maintain 9:16 aspect ratio
+    s = Math.min(renderW / W, renderH / H);
+    offsetX = (renderW - W * s) / 2;
+    offsetY = renderH - H * s; // Align bottom of game area to bottom of canvas
+
     recomputeScale();
   }
 
@@ -1050,11 +1056,12 @@
 
   function drawSkyline(offset, speedScale, color, heightMultiplier, buildingWidth) {
     ctx.fillStyle = color;
-    const count = Math.ceil(W / buildingWidth) + 2;
-    const startX = -(offset * speedScale) % buildingWidth;
+    const viewW = W + 2 * offsetX / s;
+    const count = Math.ceil(viewW / buildingWidth) + 2;
+    const startX = -offsetX / s - ((offset * speedScale + offsetX / s) % buildingWidth);
     for (let i = 0; i < count; i++) {
       const bx = startX + i * buildingWidth;
-      const buildingIdx = Math.floor((offset * speedScale) / buildingWidth) + i;
+      const buildingIdx = Math.floor((offset * speedScale + offsetX / s) / buildingWidth) + i;
       const h = (45 + (Math.abs(Math.sin(buildingIdx * 17.53)) * 75)) * heightMultiplier * scale;
       const by = H - GROUND_H - h;
       ctx.fillRect(bx, by, buildingWidth + 1, h);
@@ -1165,15 +1172,17 @@
   }
 
   function draw() {
-    ctx.setTransform(dpr * (renderW / W), 0, 0, dpr * (renderH / H), 0, 0);
+    // Set uniform scaling and offset to prevent stretching/distortion
+    ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * offsetX, dpr * offsetY);
     if (shakeTimer > 0) {
       ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
     }
 
-    // Sky
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    // Sky gradient covering the full canvas
+    const skyGrad = ctx.createLinearGradient(0, -offsetY / s, 0, H);
     skyGrad.addColorStop(0, '#22d3ee'); skyGrad.addColorStop(0.7, '#a5f3fc'); skyGrad.addColorStop(1, '#ecfeff');
-    ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(-offsetX / s, -offsetY / s, renderW / s, renderH / s);
 
     drawClouds();
     drawSkyline(stepCount, 0.22, 'rgba(103,232,249,0.45)', 1.0, 56*scale);
@@ -1186,21 +1195,23 @@
 
     drawParticles();
 
-    // Ground
+    // Ground - stretched to cover full canvas width
     const spd = gameState === 'dead' ? 0 : speedFor(myScore);
     const gOff = (stepCount * spd) % (20*scale);
-    ctx.fillStyle = '#e2d99b'; ctx.fillRect(0, H-GROUND_H, W, GROUND_H);
-    ctx.fillStyle = '#4ade80'; ctx.fillRect(0, H-GROUND_H, W, 14*scale);
+    ctx.fillStyle = '#e2d99b'; ctx.fillRect(-offsetX / s, H-GROUND_H, renderW / s, GROUND_H);
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(-offsetX / s, H-GROUND_H, renderW / s, 14*scale);
     ctx.fillStyle = '#16a34a';
-    for (let gx = -gOff; gx < W + 20*scale; gx += 20*scale) {
+    const startX = Math.floor(-offsetX / s - gOff);
+    const endX = W + offsetX / s + 20*scale;
+    for (let gx = startX; gx < endX; gx += 20*scale) {
       ctx.beginPath();
       ctx.moveTo(gx, H-GROUND_H); ctx.lineTo(gx+8*scale, H-GROUND_H);
       ctx.lineTo(gx-4*scale, H-GROUND_H+14*scale); ctx.lineTo(gx-12*scale, H-GROUND_H+14*scale);
       ctx.closePath(); ctx.fill();
     }
     ctx.fillStyle = '#15803d';
-    ctx.fillRect(0, H-GROUND_H, W, 2*scale);
-    ctx.fillRect(0, H-GROUND_H+14*scale, W, 2*scale);
+    ctx.fillRect(-offsetX / s, H-GROUND_H, renderW / s, 2*scale);
+    ctx.fillRect(-offsetX / s, H-GROUND_H+14*scale, renderW / s, 2*scale);
 
     // Draw remote birds first (behind) - faded opacity for less visual distraction
     for (const id in remotePlayers) {
@@ -1239,10 +1250,10 @@
       drawBird(BIRD_X, py, prot, stepCount * 0.12, 0, BIRD_R, previewColor, true);
     }
 
-    // Flash
+    // Flash full screen
     if (flashAlpha > 0) {
       ctx.fillStyle = 'rgba(255,255,255,' + flashAlpha + ')';
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillRect(-offsetX / s, -offsetY / s, renderW / s, renderH / s);
     }
   }
 
