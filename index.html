@@ -389,6 +389,7 @@
   // ===== GAME STATE =====
   let gameState = 'menu'; // menu | lobby | waiting | playing | dead
   let isSinglePlayer = false;
+  let graceTimer = 0;
   let myId = null;
   let myPlayer = null;
   let remotePlayers = {}; // id -> { targetY, targetRot, ... }
@@ -833,6 +834,7 @@
     shakeTimer = 0;
     myScore = 0;
     remotePlayers = {};
+    graceTimer = 3.0;
 
     // Find my color/info
     const myInfo = allPlayersInfo.find(p => p.id === myId);
@@ -875,6 +877,9 @@
 
   function jump() {
     if (gameState !== 'playing' || !myPlayer || !myPlayer.alive) return;
+    if (graceTimer > 0) {
+      graceTimer = 0;
+    }
     myPlayer.vy = -JUMP_V;
     myPlayer.flapTimer = 0.15;
     sndFlap();
@@ -917,31 +922,39 @@
 
     // My bird physics
     if (myPlayer.alive) {
-      myPlayer.vy += GRAV;
-      myPlayer.y += myPlayer.vy;
-      myPlayer.rot = Math.max(-0.4, Math.min(1.2, myPlayer.vy * 0.08));
-
-      if (myPlayer.flapTimer > 0) {
-        myPlayer.flapTimer -= 1/60;
-        myPlayer.wingPhase += 0.5;
+      if (graceTimer > 0) {
+        graceTimer -= 1/60;
+        myPlayer.y = H / 2 + Math.sin(stepCount * 0.08) * 12;
+        myPlayer.vy = 0;
+        myPlayer.rot = Math.sin(stepCount * 0.08) * 0.1;
+        myPlayer.wingPhase += 0.15;
       } else {
-        myPlayer.wingPhase += 0.12;
-      }
+        myPlayer.vy += GRAV;
+        myPlayer.y += myPlayer.vy;
+        myPlayer.rot = Math.max(-0.4, Math.min(1.2, myPlayer.vy * 0.08));
 
-      // Pipe collision
-      for (let i = 0; i < pipes.length; i++) {
-        const p = pipes[i];
-        if (myPlayer.x + myPlayer.r > p.x && myPlayer.x - myPlayer.r < p.x + PIPE_W) {
-          if (myPlayer.y - myPlayer.r < p.top || myPlayer.y + myPlayer.r > p.top + p.gap) {
-            killMyPlayer();
-            break;
+        if (myPlayer.flapTimer > 0) {
+          myPlayer.flapTimer -= 1/60;
+          myPlayer.wingPhase += 0.5;
+        } else {
+          myPlayer.wingPhase += 0.12;
+        }
+
+        // Pipe collision
+        for (let i = 0; i < pipes.length; i++) {
+          const p = pipes[i];
+          if (myPlayer.x + myPlayer.r > p.x && myPlayer.x - myPlayer.r < p.x + PIPE_W) {
+            if (myPlayer.y - myPlayer.r < p.top || myPlayer.y + myPlayer.r > p.top + p.gap) {
+              killMyPlayer();
+              break;
+            }
           }
         }
-      }
 
-      // Bounds collision
-      if (myPlayer.alive && (myPlayer.y + myPlayer.r > H - GROUND_H || myPlayer.y - myPlayer.r < 0)) {
-        killMyPlayer();
+        // Bounds collision
+        if (myPlayer.alive && (myPlayer.y + myPlayer.r > H - GROUND_H || myPlayer.y - myPlayer.r < 0)) {
+          killMyPlayer();
+        }
       }
     }
 
