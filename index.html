@@ -170,7 +170,14 @@
   .room-code-display .hint { font-size: 11px; opacity: 0.5; margin-top: 8px; }
 
   /* ===== PLAYER LIST ===== */
-  .player-list { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .player-list {
+    width: 100%; display: flex; flex-direction: column; gap: 8px;
+    max-height: 180px; overflow-y: auto; padding-right: 4px;
+  }
+  .player-list::-webkit-scrollbar { width: 6px; }
+  .player-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+  .player-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .player-list::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
   .player-item {
     display: flex; align-items: center; gap: 10px;
     background: rgba(255,255,255,0.08); border-radius: 12px;
@@ -242,7 +249,14 @@
   .sb-bounce { transform: scale(1.2) !important; }
 
   /* ===== LEADERBOARD (game over) ===== */
-  .leaderboard { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .leaderboard {
+    width: 100%; display: flex; flex-direction: column; gap: 8px;
+    max-height: 180px; overflow-y: auto; padding-right: 4px;
+  }
+  .leaderboard::-webkit-scrollbar { width: 6px; }
+  .leaderboard::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+  .leaderboard::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .leaderboard::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
   .lb-row {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 14px; border-radius: 12px;
@@ -318,6 +332,14 @@
     { body: '#f87171', stroke: '#991b1b', name: 'Red',    wing: '#fef2f2' },
     { body: '#fb923c', stroke: '#9a3412', name: 'Orange', wing: '#fff7ed' },
     { body: '#2dd4bf', stroke: '#115e59', name: 'Cyan',   wing: '#f0fdfa' },
+    { body: '#a3e635', stroke: '#4d7c0f', name: 'Lime',   wing: '#f7fee7' },
+    { body: '#34d399', stroke: '#047857', name: 'Emerald', wing: '#ecfdf5' },
+    { body: '#818cf8', stroke: '#4338ca', name: 'Indigo',  wing: '#e0e7ff' },
+    { body: '#fda4af', stroke: '#be123c', name: 'Rose',    wing: '#fff1f2' },
+    { body: '#e879f9', stroke: '#a21caf', name: 'Fuchsia', wing: '#fdf4ff' },
+    { body: '#38bdf8', stroke: '#0369a1', name: 'Sky',     wing: '#f0f9ff' },
+    { body: '#fbbf24', stroke: '#b45309', name: 'Amber',   wing: '#fffbeb' },
+    { body: '#ddd6fe', stroke: '#6d28d9', name: 'Violet',  wing: '#f5f3ff' },
   ];
 
   // ===== GEOMETRY =====
@@ -804,13 +826,14 @@
     overlay.classList.remove('hidden');
     scoreboardEl.classList.add('hidden');
 
-    const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣'];
+    const rankEmojis = ['🥇', '🥈', '🥉'];
     let lbHtml = '';
     rankings.forEach(function(p, i) {
       const isYou = p.id === myId;
+      const rankText = (i < 3) ? rankEmojis[i] : (i + 1) + '.';
       lbHtml +=
         '<div class="lb-row' + (i === 0 ? ' first' : '') + (isYou ? ' you' : '') + '">' +
-          '<span class="lb-rank">' + rankEmojis[i] + '</span>' +
+          '<span class="lb-rank" style="font-size: ' + (i < 3 ? '20px' : '14px') + '; font-weight: 800; width: 32px; display: inline-block;">' + rankText + '</span>' +
           '<div class="lb-color" style="background:' + p.color.body + ';"></div>' +
           '<div class="lb-name-group" style="flex:1; display:flex; flex-direction:column; min-width:0; text-align:left;">' +
             '<span class="lb-name" style="font-size:14px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;">' + escHtml(p.name) + (isYou ? ' (You)' : '') + '</span>' +
@@ -864,8 +887,9 @@
   // ===== SCOREBOARD (in-game) =====
   function updateScoreboard() {
     if (gameState !== 'playing') return;
-    let html = '';
-    allPlayersInfo.forEach(function(pInfo) {
+    
+    // Gather all players with their scores and alive states
+    const list = allPlayersInfo.map(function(pInfo) {
       const isMe = pInfo.id === myId;
       let score = 0;
       let alive = true;
@@ -876,11 +900,36 @@
         score = remotePlayers[pInfo.id].score || 0;
         alive = remotePlayers[pInfo.id].alive !== false;
       }
+      return {
+        id: pInfo.id,
+        name: pInfo.name,
+        color: pInfo.color,
+        isMe: isMe,
+        score: score,
+        alive: alive
+      };
+    });
+
+    // Sort: alive players first, then by score descending
+    list.sort(function(a, b) {
+      if (a.alive !== b.alive) return a.alive ? -1 : 1;
+      return b.score - a.score;
+    });
+
+    // Limit display to top 4. If local player is not in top 4, replace the 4th slot.
+    let displayList = list.slice(0, 4);
+    const meIndex = list.findIndex(function(p) { return p.isMe; });
+    if (meIndex >= 4) {
+      displayList[3] = list[meIndex];
+    }
+
+    let html = '';
+    displayList.forEach(function(p) {
       html +=
-        '<div class="sb-item' + (!alive ? ' dead' : '') + (isMe ? ' you' : '') + '" id="sb-' + pInfo.id + '">' +
-          '<div class="sb-dot" style="background:' + pInfo.color.body + ';"></div>' +
-          '<span class="sb-name">' + escHtml(pInfo.name) + '</span>' +
-          '<span class="sb-score">' + score + '</span>' +
+        '<div class="sb-item' + (!p.alive ? ' dead' : '') + (p.isMe ? ' you' : '') + '" id="sb-' + p.id + '">' +
+          '<div class="sb-dot" style="background:' + p.color.body + ';"></div>' +
+          '<span class="sb-name">' + escHtml(p.name) + '</span>' +
+          '<span class="sb-score">' + p.score + '</span>' +
         '</div>';
     });
     scoreboardEl.innerHTML = html;
@@ -1327,7 +1376,7 @@
       if (!info) continue;
       const color = PLAYER_COLORS[info.colorIndex];
       ctx.save();
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.05;
       drawBird(BIRD_X, rp.y, rp.rot, rp.wingPhase, rp.flapTimer, BIRD_R, color, true);
       ctx.restore();
       drawPlayerLabel(BIRD_X, rp.y, BIRD_R, info.name, color, true, 0.45);

@@ -41,6 +41,14 @@ const PLAYER_COLORS = [
   { body: '#f87171', stroke: '#991b1b', name: 'Red',    wing: '#fef2f2' },
   { body: '#fb923c', stroke: '#9a3412', name: 'Orange', wing: '#fff7ed' },
   { body: '#2dd4bf', stroke: '#115e59', name: 'Cyan',   wing: '#f0fdfa' },
+  { body: '#a3e635', stroke: '#4d7c0f', name: 'Lime',   wing: '#f7fee7' },
+  { body: '#34d399', stroke: '#047857', name: 'Emerald', wing: '#ecfdf5' },
+  { body: '#818cf8', stroke: '#4338ca', name: 'Indigo',  wing: '#e0e7ff' },
+  { body: '#fda4af', stroke: '#be123c', name: 'Rose',    wing: '#fff1f2' },
+  { body: '#e879f9', stroke: '#a21caf', name: 'Fuchsia', wing: '#fdf4ff' },
+  { body: '#38bdf8', stroke: '#0369a1', name: 'Sky',     wing: '#f0f9ff' },
+  { body: '#fbbf24', stroke: '#b45309', name: 'Amber',   wing: '#fffbeb' },
+  { body: '#ddd6fe', stroke: '#6d28d9', name: 'Violet',  wing: '#f5f3ff' },
 ];
 
 function generateCode() {
@@ -195,8 +203,8 @@ wss.on('connection', function (ws, req) {
           return;
         }
         const room = rooms.get(code);
-        if (room.players.length >= 4) {
-          send(ws, { type: 'error', msg: 'Room is full (max 4 players)!' });
+        if (room.players.length >= 20) {
+          send(ws, { type: 'error', msg: 'Room is full (max 20 players)!' });
           return;
         }
         if (room.state !== 'lobby') {
@@ -237,7 +245,7 @@ wss.on('connection', function (ws, req) {
           hostId: room.hostId,
         }, ws);
 
-        console.log('[Room ' + code + '] ' + player.name + ' joined (' + room.players.length + '/4)');
+        console.log('[Room ' + code + '] ' + player.name + ' joined (' + room.players.length + '/20)');
         break;
       }
 
