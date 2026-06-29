@@ -831,7 +831,7 @@
         '<div class="settings-group" style="width:100%; display:flex; flex-direction:column; gap:4px; align-items:center; margin: 8px 0; background:rgba(0,0,0,0.2); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">' +
           '<div style="font-family:\'Press Start 2P\', monospace; font-size: 8px; color:#fde047; margin-bottom:6px;">MAX SCORE LIMIT</div>' +
           '<div style="display:flex; align-items:center; gap:8px; width:100%;">' +
-            '<input type="number" id="maxScoreInput" min="0" max="999" value="' + roomMaxScore + '" style="width:100%; text-align:center; padding:8px; border-radius:8px; background:rgba(0,0,0,0.3); border:1.5px solid rgba(255,255,255,0.2); color:#fff; font-family:\'Outfit\', sans-serif; font-weight:700; outline:none; font-size:14px;" />' +
+            '<input type="number" id="maxScoreInput" min="0" max="500" value="' + roomMaxScore + '" style="width:100%; text-align:center; padding:8px; border-radius:8px; background:rgba(0,0,0,0.3); border:1.5px solid rgba(255,255,255,0.2); color:#fff; font-family:\'Outfit\', sans-serif; font-weight:700; outline:none; font-size:14px;" />' +
           '</div>' +
         '</div>';
     } else {
@@ -868,6 +868,10 @@
       maxScoreInput.addEventListener('change', function() {
         let val = parseInt(this.value);
         if (isNaN(val) || val < 0) val = 0;
+        if (val > 500) {
+          val = 500;
+          this.value = 500;
+        }
         sendMsg({ type: 'settings', maxScore: val });
       });
       maxScoreInput.addEventListener('keydown', function(e) {

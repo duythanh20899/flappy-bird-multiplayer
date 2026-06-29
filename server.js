@@ -377,6 +377,7 @@ wss.on('connection', function (ws, req) {
 
         let maxScore = parseInt(msg.maxScore);
         if (isNaN(maxScore) || maxScore < 0) maxScore = 0;
+        if (maxScore > 500) maxScore = 500;
         room.maxScore = maxScore;
 
         sendToAll(room, {
