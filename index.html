@@ -296,6 +296,38 @@
   }
   @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
   @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+
+  /* ===== CONFETTI & WINNER EFFECT ===== */
+  @keyframes confetti-fall {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(660px) rotate(720deg); opacity: 0; }
+  }
+  .confetti {
+    position: absolute;
+    z-index: 999;
+    pointer-events: none;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes rainbow-glow {
+    0% { color: #fde047; text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 0 20px rgba(253, 224, 71, 0.4); }
+    50% { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.8), 0 0 20px rgba(74, 222, 128, 0.4); }
+    100% { color: #fde047; text-shadow: 0 0 10px rgba(253, 224, 71, 0.8), 0 0 20px rgba(253, 224, 71, 0.4); }
+  }
+  .winner-banner {
+    width: 100%;
+    background: linear-gradient(90deg, rgba(253,224,71,0.1), rgba(253,224,71,0.2) 50%, rgba(253,224,71,0.1));
+    border-top: 2px solid rgba(253,224,71,0.4);
+    border-bottom: 2px solid rgba(253,224,71,0.4);
+    padding: 10px 0;
+    margin: 4px 0;
+    text-align: center;
+  }
+  .winner-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    animation: rainbow-glow 2s infinite ease-in-out;
+    margin: 0;
+  }
 </style>
 </head>
 <body>
@@ -455,6 +487,7 @@
   let deathTime = 0;
   let roomCode = '';
   let isHost = false;
+  let roomMaxScore = 100;
 
   let best = parseInt(localStorage.getItem('flappy_best') || '0', 10) || 0;
 
@@ -560,6 +593,9 @@
         if (msg.yourId) myId = msg.yourId;
         isHost = (msg.hostId === myId);
         allPlayersInfo = msg.players || [];
+        if (typeof msg.maxScore === 'number') {
+          roomMaxScore = msg.maxScore;
+        }
         // Handle restart: also accept 'room' when dead or playing (server sent restart)
         if (gameState === 'lobby' || gameState === 'waiting' || gameState === 'menu' || gameState === 'dead') {
           stopSyncLoop();
@@ -655,6 +691,7 @@
   }
 
   function showMenu() {
+    stopConfetti();
     gameState = 'menu';
     overlay.classList.remove('hidden');
     scoreboardEl.classList.add('hidden');
@@ -789,6 +826,24 @@
       ? 'Waiting for players<span class="waiting-dots"></span>'
       : (isHost ? 'Ready! Press start' : 'Waiting for host to start<span class="waiting-dots"></span>');
 
+    let settingsHtml = '';
+    if (isHost) {
+      settingsHtml =
+        '<div class="settings-group" style="width:100%; display:flex; flex-direction:column; gap:4px; align-items:center; margin: 8px 0; background:rgba(0,0,0,0.2); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">' +
+          '<div style="font-family:\'Press Start 2P\', monospace; font-size: 8px; color:#fde047; margin-bottom:6px;">MAX SCORE LIMIT</div>' +
+          '<div style="display:flex; align-items:center; gap:8px; width:100%;">' +
+            '<input type="number" id="maxScoreInput" min="0" max="999" value="' + roomMaxScore + '" style="width:100%; text-align:center; padding:8px; border-radius:8px; background:rgba(0,0,0,0.3); border:1.5px solid rgba(255,255,255,0.2); color:#fff; font-family:\'Outfit\', sans-serif; font-weight:700; outline:none; font-size:14px;" />' +
+          '</div>' +
+        '</div>';
+    } else {
+      const displayLimitText = roomMaxScore > 0 ? roomMaxScore + ' pts' : 'Unlimited';
+      settingsHtml =
+        '<div class="settings-group" style="width:100%; display:flex; flex-direction:column; gap:4px; align-items:center; margin: 8px 0; background:rgba(0,0,0,0.15); padding:8px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">' +
+          '<div style="font-family:\'Press Start 2P\', monospace; font-size: 8px; color:#cbd5e1; margin-bottom:2px;">MAX SCORE LIMIT</div>' +
+          '<div style="font-family:\'Outfit\', sans-serif; font-size: 14px; font-weight: 700; color:#ffd000;">' + displayLimitText + '</div>' +
+        '</div>';
+    }
+
     overlay.innerHTML =
       '<div class="card">' +
         '<h2>WAITING ROOM</h2>' +
@@ -797,6 +852,7 @@
           '<div class="code">' + escHtml(roomCode) + '</div>' +
           '<div class="hint">Share this code with friends</div>' +
         '</div>' +
+        settingsHtml +
         '<div class="player-list">' + playersHtml + '</div>' +
         '<p>' + waitingMsg + '</p>' +
         (canStart
@@ -807,6 +863,20 @@
         ) +
         '<button class="btn-secondary" id="backBtn" style="width:100%;margin-top:4px">← BACK</button>' +
       '</div>';
+
+    const maxScoreInput = document.getElementById('maxScoreInput');
+    if (maxScoreInput) {
+      maxScoreInput.addEventListener('change', function() {
+        let val = parseInt(this.value);
+        if (isNaN(val) || val < 0) val = 0;
+        sendMsg({ type: 'settings', maxScore: val });
+      });
+      maxScoreInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          this.blur();
+        }
+      });
+    }
 
     if (document.getElementById('goBtn') && canStart) {
       document.getElementById('goBtn').addEventListener('click', function(e) {
@@ -844,9 +914,19 @@
         '</div>';
     });
 
+    let titleHtml = '<h1>RESULTS</h1>';
+    if (!isSinglePlayer && rankings.length > 0) {
+      const winnerName = rankings[0].name;
+      titleHtml =
+        '<div class="winner-banner">' +
+          '<h1 class="winner-title">🏆 WINNER: ' + escHtml(winnerName).toUpperCase() + ' 🏆</h1>' +
+        '</div>';
+      startConfetti();
+    }
+
     overlay.innerHTML =
       '<div class="card">' +
-        '<h1>RESULTS</h1>' +
+        titleHtml +
         '<div class="leaderboard">' + lbHtml + '</div>' +
         (isSinglePlayer
           ? '<p style="font-family:\'Press Start 2P\', monospace; font-size: 11px; color: #fde047; margin: 8px 0;">BEST: ' + best + '</p>'
@@ -936,8 +1016,43 @@
     scoreboardEl.innerHTML = html;
   }
 
+  // ===== CONFETTI EFFECT =====
+  let confettiInterval = null;
+  function startConfetti() {
+    stopConfetti();
+    const colors = ['#f472b6', '#60a5fa', '#34d399', '#fde047', '#a78bfa', '#fb923c'];
+    confettiInterval = setInterval(function() {
+      if (gameState === 'playing') {
+        stopConfetti();
+        return;
+      }
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.top = '-10px';
+      confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.width = Math.random() * 8 + 6 + 'px';
+      confetti.style.height = Math.random() * 8 + 6 + 'px';
+      if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
+      confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+      overlay.appendChild(confetti);
+      setTimeout(function() { confetti.remove(); }, 4000);
+    }, 50);
+  }
+
+  function stopConfetti() {
+    if (confettiInterval) {
+      clearInterval(confettiInterval);
+      confettiInterval = null;
+    }
+    document.querySelectorAll('.confetti').forEach(function(el) {
+      el.remove();
+    });
+  }
+
   // ===== GAME LOGIC =====
   function startGame() {
+    stopConfetti();
     gameState = 'playing';
     overlay.classList.add('hidden');
     scoreboardEl.classList.remove('hidden');
@@ -1114,6 +1229,18 @@
           sndScore();
           spawnParticles(myPlayer.x + myPlayer.r, myPlayer.y, myPlayer.color.body, 8, 1, (Math.random()-0.5)*3, 3);
           updateScoreboard();
+          if (!isSinglePlayer) {
+            sendMsg({
+              type: 'state',
+              y: myPlayer.y / H,
+              vy: myPlayer.vy,
+              rot: myPlayer.rot,
+              score: myScore,
+              alive: myPlayer.alive,
+              wingPhase: myPlayer.wingPhase,
+              flapTimer: myPlayer.flapTimer,
+            });
+          }
         }
       }
     }

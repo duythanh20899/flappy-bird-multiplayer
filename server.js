@@ -128,13 +128,24 @@ function removePlayerFromRoom(ws) {
     code: roomCode,
     players: getPlayerList(room),
     hostId: room.hostId,
+    maxScore: room.maxScore,
   });
 
   if (room.state === 'playing') {
     const alive = room.players.filter(function (p) { return p.alive !== false; });
     if (alive.length <= 1) {
       room.state = 'ended';
-      sendToAll(room, { type: 'gameover' });
+      const rankings = room.players.map(function (p) {
+        return {
+          id: p.id,
+          name: p.name,
+          colorIndex: p.colorIndex,
+          color: PLAYER_COLORS[p.colorIndex],
+          score: p.lastState ? p.lastState.score : 0,
+          totalScore: p.totalScore || 0,
+        };
+      }).sort(function (a, b) { return b.score - a.score; });
+      sendToAll(room, { type: 'gameover', rankings: rankings });
     }
   }
 
@@ -181,6 +192,7 @@ wss.on('connection', function (ws, req) {
           players: [player],
           state: 'lobby',
           seed: 0,
+          maxScore: 100,
         };
         rooms.set(code, room);
         ws._roomCode = code;
@@ -191,6 +203,7 @@ wss.on('connection', function (ws, req) {
           players: getPlayerList(room),
           hostId: room.hostId,
           yourId: ws._playerId,
+          maxScore: room.maxScore,
         });
         console.log('[Room ' + code + '] Created by ' + player.name);
         break;
@@ -236,6 +249,7 @@ wss.on('connection', function (ws, req) {
           players: getPlayerList(room),
           hostId: room.hostId,
           yourId: ws._playerId,
+          maxScore: room.maxScore,
         });
 
         broadcastToRoom(room, {
@@ -243,6 +257,7 @@ wss.on('connection', function (ws, req) {
           code: code,
           players: getPlayerList(room),
           hostId: room.hostId,
+          maxScore: room.maxScore,
         }, ws);
 
         console.log('[Room ' + code + '] ' + player.name + ' joined (' + room.players.length + '/20)');
@@ -301,7 +316,11 @@ wss.on('connection', function (ws, req) {
         broadcastToRoom(room, { type: 'sync', states: states }, ws);
 
         const allDead = room.players.every(function (p) { return !p.alive; });
-        if (allDead && room.state === 'playing') {
+        const targetReached = (room.maxScore > 0 && room.players.some(function (p) {
+          return p.lastState && p.lastState.score >= room.maxScore;
+        }));
+
+        if ((allDead || targetReached) && room.state === 'playing') {
           room.state = 'ended';
 
           // Accumulate total scores for all players in the current room session
@@ -321,7 +340,12 @@ wss.on('connection', function (ws, req) {
             };
           }).sort(function (a, b) { return b.score - a.score; });
 
-          sendToAll(room, { type: 'gameover', rankings: rankings });
+          sendToAll(room, { 
+            type: 'gameover', 
+            rankings: rankings,
+            endedByTarget: targetReached,
+            winnerId: rankings[0].id
+          });
           console.log('[Room ' + room.code + '] Game over! Winner: ' + rankings[0].name + ' (' + rankings[0].score + ')');
         }
         break;
@@ -340,8 +364,29 @@ wss.on('connection', function (ws, req) {
           code: room.code,
           players: getPlayerList(room),
           hostId: room.hostId,
+          maxScore: room.maxScore,
         });
         console.log('[Room ' + room.code + '] Back to lobby');
+        break;
+      }
+
+      case 'settings': {
+        const room = rooms.get(ws._roomCode);
+        if (!room) return;
+        if (room.hostId !== ws._playerId) return;
+
+        let maxScore = parseInt(msg.maxScore);
+        if (isNaN(maxScore) || maxScore < 0) maxScore = 0;
+        room.maxScore = maxScore;
+
+        sendToAll(room, {
+          type: 'room',
+          code: room.code,
+          players: getPlayerList(room),
+          hostId: room.hostId,
+          maxScore: room.maxScore,
+        });
+        console.log('[Room ' + room.code + '] Settings updated. Max Score: ' + room.maxScore);
         break;
       }
     }
